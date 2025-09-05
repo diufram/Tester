@@ -9,13 +9,14 @@ En la raíz del proyecto, ejecuta:
 
 dotnet run
 
-## 🚀 Comandos una vez corre el proyecto
+## 📜 Comandos una vez corre el proyecto
 
-add N       | + N    -> agrega N workers
-remove N    | - N    -> quita N workers
-set N       | = N    -> fija exactamente N workers
-pause                -> pausa los workers (soft pause)
-resume               -> reanuda la ejecución
-toggle               -> alterna entre pausar y reanudar
-status               -> muestra el conteo de workers y estado
-quit        | q      -> detiene todos los workers y sale
+```text
+add N | + N        -> agrega N workers
+remove N | - N     -> quita N workers
+set N | = N        -> fija exactamente N workers
+pause              -> pausa los workers (soft pause)
+resume             -> reanuda la ejecución
+toggle             -> alterna entre pausar y reanudar
+status             -> muestra el conteo de workers y estado
+quit | q           -> detiene todos los workers y sale
