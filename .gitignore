@@ -1,0 +1,22 @@
+# Carpetas de build
+bin/
+obj/
+out/
+
+# Archivos de usuario de Visual Studio
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Dependencias locales
+*.nupkg
+*.snupkg
+
+# Archivos temporales
+*.tmp
+*.log
+
+# Configuración específica del IDE
+.vscode/
+.idea/

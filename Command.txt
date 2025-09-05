@@ -1,0 +1,11 @@
+Comando para levantar:
+dotnet run
+
+
+Comandos:
+  add N | + N        -> agrega N workers
+  remove N | - N     -> quita N workers
+  set N | = N        -> fija exactamente N workers                                  
+  pause | resume | toggle
+  status             -> muestra conteo/estado
+  quit | q           -> salir
