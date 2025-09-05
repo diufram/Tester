@@ -9,28 +9,20 @@ Console.OutputEncoding = Encoding.UTF8;
 // Arreglo estático de OperationRequest (edítalo a tu necesidad):
 var operations = new OperationRequest[]
 {
-    new(OperationType.GetAll,  "http://localhost:5239/api/alumno"),
-    new(OperationType.GetById, "http://localhost:5239/api/alumno/1"),
-    new(OperationType.Create,
-        "http://localhost:5239/api/alumno",
-        new {
-        nombre= "JAJJAJAJJAJA",
-        ppa= 0,
-        telefono= 0,
-        registro= 0
-        }),
+    new(OperationType.GetAll,  "https://jsonplaceholder.typicode.com/posts"),
+    new(OperationType.GetById, "https://jsonplaceholder.typicode.com/posts/1"),
+    new(OperationType.GetAll,  "https://jsonplaceholder.typicode.com/users"),
+    new(OperationType.GetById, "https://jsonplaceholder.typicode.com/users/2"),
 
-    new(OperationType.Update,
-        "http://localhost:5239/api/alumno/4",
-        new {
-        nombre= "JAJJAJAJJAJA",
-        ppa= 0,
-        telefono= 0,
-        registro= 0
-        }),
+    new(OperationType.Create,  "https://jsonplaceholder.typicode.com/posts",
+        new { title = "foo", body = "bar", userId = 1 }),
 
-    new(OperationType.Delete, "http://localhost:5239/api/alumno/1"),
+    new(OperationType.Update,  "https://jsonplaceholder.typicode.com/posts/1",
+        new { id = 1, title = "foo UPDATED", body = "bar", userId = 1 }),
+
+    new(OperationType.Delete,  "https://jsonplaceholder.typicode.com/posts/1"),
 };
+
 
 // Delays entre requests por worker (ajustables)
 TimeSpan minDelay = TimeSpan.FromMilliseconds(150);
