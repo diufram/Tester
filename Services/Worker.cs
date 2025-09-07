@@ -1,4 +1,3 @@
-using Tester.Http;
 using Tester.Models;
 using Tester.Utils;
 using System.Text;
@@ -6,110 +5,128 @@ using System.Text.Json;
 
 namespace Tester.Services;
 
-public sealed class Worker
+public class Worker
 {
     private readonly int _id;
     private readonly OperationRequest[] _operations;
-    private readonly ManualResetEventSlim _pauseGate;
-    private readonly CancellationToken _stopToken;
-    private readonly Task _task;
-    private readonly TimeSpan _minDelay;
-    private readonly TimeSpan _maxDelay;
+    private readonly int _minDelayMs;
+    private readonly int _maxDelayMs;
+    private readonly Random _random;
+    private bool _isRunning;
+    private Task _task = Task.CompletedTask;
 
-    private static readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web);
-
-    public Worker(
-        int id,
-        OperationRequest[] operations,
-        ManualResetEventSlim pauseGate,
-        CancellationToken stopToken,
-        TimeSpan minDelay,
-        TimeSpan maxDelay)
+    public Worker(int id, OperationRequest[] operations, int minDelayMs, int maxDelayMs)
     {
         _id = id;
         _operations = operations;
-        _pauseGate = pauseGate;
-        _stopToken = stopToken;
-        _minDelay = minDelay;
-        _maxDelay = maxDelay;
-
-        // Hilo dedicado para no saturar el thread pool:
-        _task = Task.Factory.StartNew(
-            () => RunAsync().GetAwaiter().GetResult(),
-            CancellationToken.None,
-            TaskCreationOptions.LongRunning,
-            TaskScheduler.Default
-        );
+        _minDelayMs = minDelayMs;
+        _maxDelayMs = maxDelayMs;
+        _random = new Random();
     }
 
-    public Task Task => _task;
-
-    private async Task RunAsync()
+    public void Start()
     {
-        while (!_stopToken.IsCancellationRequested)
+        if (_isRunning) return;
+
+        _isRunning = true;
+        _task = Task.Run(async () => await WorkLoop());
+        Console.WriteLine($"Worker {_id} iniciado");
+    }
+
+    public void Stop()
+    {
+        _isRunning = false;
+        Console.WriteLine($"Worker {_id} detenido");
+    }
+
+    private async Task WorkLoop()
+    {
+        using var client = new HttpClient();
+
+        while (_isRunning)
         {
-            // Espera cooperativa de pausa (no consume CPU):
-            try { _pauseGate.Wait(_stopToken); } catch (OperationCanceledException) { break; }
-
-            var op = _operations[Utils.RandomUtil.NextInt(0, _operations.Length)];
-
             try
             {
-                var req = BuildHttpRequest(op);
-                var started = DateTime.UtcNow;
-                var resp = await HttpClientProvider.Client.SendAsync(req, _stopToken);
-                var elapsed = DateTime.UtcNow - started;
+                // Elegir operación al azar
+                var operation = _operations[_random.Next(_operations.Length)];
 
-                Log.Write($"[W{_id}] {op.Operation} {op.Url} => {(int)resp.StatusCode} {resp.ReasonPhrase} ({elapsed.TotalMilliseconds:N0} ms)");
+                // Hacer la petición
+                var startTime = DateTime.Now;
+                var response = await MakeRequest(client, operation);
+                var duration = DateTime.Now - startTime;
+
+                Console.WriteLine($"[Worker {_id}] {operation.Method} {operation.Url} -> {response.StatusCode} ({duration.TotalMilliseconds:F0}ms)");
+
+                // Descansar un tiempo aleatorio
+                var delay = _random.Next(_minDelayMs, _maxDelayMs);
+                await Task.Delay(delay);
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"[Worker {_id}] HTTP Error: {ex.Message}");
+                await Task.Delay(2000); // Esperar más tiempo si hay error de red
+            }
+            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+            {
+                Console.WriteLine($"[Worker {_id}] Timeout: La petición tardó más de 10 segundos");
+                await Task.Delay(1000);
             }
             catch (TaskCanceledException)
             {
-                if (_stopToken.IsCancellationRequested) break; // cierre
-                // si fue por pausa, el loop sigue y volverá a Wait() arriba
+                Console.WriteLine($"[Worker {_id}] Timeout: La petición fue cancelada");
+                await Task.Delay(1000);
             }
             catch (Exception ex)
             {
-                Log.Write($"[W{_id}] ERROR {op.Operation} {op.Url}: {ex.Message}");
-            }
-
-            // Delay amortiguado, rechecando pausa para que "pause" sea inmediato:
-            var ms = Utils.RandomUtil.NextInt((int)_minDelay.TotalMilliseconds, (int)_maxDelay.TotalMilliseconds + 1);
-            var remain = ms;
-            while (remain > 0 && !_stopToken.IsCancellationRequested)
-            {
-                var chunk = Math.Min(remain, 50);
-                try { await Task.Delay(chunk, _stopToken); } catch { }
-                remain -= chunk;
-
-                // Si se activó la pausa durante el delay, espera aquí:
-                if (!_pauseGate.IsSet)
-                {
-                    try { _pauseGate.Wait(_stopToken); } catch (OperationCanceledException) { break; }
-                }
+                Console.WriteLine($"[Worker {_id}] Error inesperado: {ex.Message}");
+                await Task.Delay(1000);
             }
         }
     }
 
-    private static HttpRequestMessage BuildHttpRequest(OperationRequest op)
+    private async Task<System.Net.Http.HttpResponseMessage> MakeRequest(System.Net.Http.HttpClient client, OperationRequest operation)
     {
-        var method = op.Operation switch
+        var request = new System.Net.Http.HttpRequestMessage();
+        request.RequestUri = new Uri(operation.Url);
+
+        request.Method = operation.Method.ToUpper() switch
         {
-            OperationType.GetAll  => HttpMethod.Get,
-            OperationType.GetById => HttpMethod.Get,
-            OperationType.Create  => HttpMethod.Post,
-            OperationType.Update  => HttpMethod.Put,
-            OperationType.Delete  => HttpMethod.Delete,
-            _ => HttpMethod.Get
+            "GET" => System.Net.Http.HttpMethod.Get,
+            "POST" => System.Net.Http.HttpMethod.Post,
+            "PUT" => System.Net.Http.HttpMethod.Put,
+            "PATCH" => System.Net.Http.HttpMethod.Patch,
+            "DELETE" => System.Net.Http.HttpMethod.Delete,
+            _ => System.Net.Http.HttpMethod.Get
         };
 
-        var msg = new HttpRequestMessage(method, new Uri(op.Url));
-
-        if (op.Operation is OperationType.Create or OperationType.Update && op.Body is not null)
+        // Agregar header de idempotencia para operaciones POST, PUT, PATCH
+        if (operation.Method.ToUpper() is "POST" or "PUT" or "PATCH")
         {
-            var json = JsonSerializer.Serialize(op.Body, _json);
-            msg.Content = new StringContent(json, Encoding.UTF8, "application/json");
+            var idempotencyKey = GenerateIdempotencyKey();
+            var idempotencyHeaderName = Environment.GetEnvironmentVariable("IDEMPOTENCY_KEY_HEADER") ?? "x-idempotency-key";
+            request.Headers.Add(idempotencyHeaderName, idempotencyKey);
         }
 
-        return msg;
+        if (operation.Body != null && (operation.Method == "POST" || operation.Method == "PUT" || operation.Method == "PATCH"))
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(operation.Body);
+            request.Content = new System.Net.Http.StringContent(json, Encoding.UTF8, "application/json");
+        }
+
+        if (!string.IsNullOrEmpty(operation.Token))
+        {
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", operation.Token);
+        }
+
+        return await client.SendAsync(request);
+    }
+
+    private string GenerateIdempotencyKey()
+    {
+        // Generar una clave única usando GUID + timestamp para mayor unicidad
+        var guid = Guid.NewGuid().ToString("N"); // Sin guiones
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        return $"{guid}_{timestamp}";
     }
 }
+

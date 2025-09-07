@@ -2,105 +2,78 @@ using Tester.Models;
 
 namespace Tester.Services;
 
-public sealed class WorkerManager
+public class WorkerManager
 {
-    private readonly List<(CancellationTokenSource cts, Worker worker)> _workers = new();
-    private readonly ManualResetEventSlim _pauseGate = new(initialState: true);
+    private readonly List<Worker> _workers = new();
     private readonly OperationRequest[] _operations;
-    private readonly TimeSpan _minDelay;
-    private readonly TimeSpan _maxDelay;
+    private readonly int _minDelayMs;
+    private readonly int _maxDelayMs;
 
-    public WorkerManager(OperationRequest[] operations, TimeSpan minDelay, TimeSpan maxDelay)
+    public WorkerManager(OperationRequest[] operations, int minDelayMs = 1000, int maxDelayMs = 3000)
     {
         _operations = operations;
-        _minDelay = minDelay;
-        _maxDelay = maxDelay;
+        _minDelayMs = minDelayMs;
+        _maxDelayMs = maxDelayMs;
     }
 
-    public int Count => _workers.Count;
-    public bool IsPaused => !_pauseGate.IsSet;
-
-    // ===== Operaciones de tamaño =====
-    public void AddWorkers(int n)
+    public void AddWorkers(int count)
     {
-        if (n <= 0) { Console.WriteLine("Cantidad a agregar debe ser > 0."); return; }
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < count; i++)
         {
-            var cts = new CancellationTokenSource();
-            var worker = new Worker(_workers.Count + 1, _operations, _pauseGate, cts.Token, _minDelay, _maxDelay);
-            _workers.Add((cts, worker));
+            var worker = new Worker(_workers.Count + 1, _operations, _minDelayMs, _maxDelayMs);
+            _workers.Add(worker);
+            worker.Start();
         }
-        Console.WriteLine($"➕ Agregados {n} worker(s). Total: {Count}");
+        Console.WriteLine($" {count} workers agregados. Total: {_workers.Count}");
     }
 
-    public async Task RemoveWorkersAsync(int n)
+    public void RemoveWorkers(int count)
     {
-        if (n <= 0) { Console.WriteLine("Cantidad a quitar debe ser > 0."); return; }
-        if (_workers.Count == 0) { Console.WriteLine("No hay workers para quitar."); return; }
+        if (count > _workers.Count) count = _workers.Count;
 
-        n = Math.Min(n, _workers.Count);
-        var toStop = new List<(CancellationTokenSource cts, Worker worker)>();
-
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < count; i++)
         {
-            var last = _workers[^1];
+            var worker = _workers[_workers.Count - 1];
+            worker.Stop();
             _workers.RemoveAt(_workers.Count - 1);
-            toStop.Add(last);
         }
-
-        Console.WriteLine($"➖ Deteniendo {n} worker(s)...");
-        foreach (var w in toStop) w.cts.Cancel();
-        foreach (var w in toStop) { try { await w.worker.Task; } catch { } w.cts.Dispose(); }
-
-        Console.WriteLine($"Total actual: {Count}");
+        Console.WriteLine($" {count} workers removidos. Total: {_workers.Count}");
     }
 
-    public async Task SetWorkersAsync(int target)
+    public void SetWorkers(int target)
     {
-        if (target < 0) { Console.WriteLine("El tamaño objetivo no puede ser negativo."); return; }
-
-        if (target > Count)
+        if (target < 0)
         {
-            AddWorkers(target - Count);
+            Console.WriteLine(" El número objetivo no puede ser negativo");
+            return;
         }
-        else if (target < Count)
+
+        if (target > _workers.Count)
         {
-            await RemoveWorkersAsync(Count - target);
+            AddWorkers(target - _workers.Count);
+        }
+        else if (target < _workers.Count)
+        {
+            RemoveWorkers(_workers.Count - target);
         }
         else
         {
-            Console.WriteLine($"Ya hay {Count} worker(s).");
+            Console.WriteLine($" Ya tienes {_workers.Count} worker(s)");
         }
     }
 
-    // ===== Control de pausa =====
-    public void Pause()
+    public void StopAll()
     {
-        if (IsPaused) { Console.WriteLine("Ya está en pausa."); return; }
-        _pauseGate.Reset();
-        Console.WriteLine("⏸️  Pausado.");
-    }
-
-    public void Resume()
-    {
-        if (!IsPaused) { Console.WriteLine("Ya está en ejecución."); return; }
-        _pauseGate.Set();
-        Console.WriteLine("▶️  Reanudado.");
-    }
-
-    public void TogglePause()
-    {
-        if (IsPaused) Resume(); else Pause();
-    }
-
-    // ===== Detener todo =====
-    public async Task StopAllAsync()
-    {
-        Console.WriteLine("Deteniendo todos los workers...");
-        var list = _workers.ToArray();
+        foreach (var worker in _workers)
+        {
+            worker.Stop();
+        }
         _workers.Clear();
-        foreach (var w in list) w.cts.Cancel();
-        foreach (var w in list) { try { await w.worker.Task; } catch { } w.cts.Dispose(); }
-        Console.WriteLine("Todos los workers detenidos.");
+        Console.WriteLine(" Todos los workers detenidos");
+    }
+
+    public void ShowStatus()
+    {
+        Console.WriteLine($" Workers activos: {_workers.Count}");
     }
 }

@@ -1,0 +1,153 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|d:\\universidad\\semestre_2-2025\\topicos\\proyecto\\tester\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|d:\\universidad\\semestre_2-2025\\topicos\\proyecto\\tester\\models\\operationrequest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|solutionrelative:models\\operationrequest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|d:\\universidad\\semestre_2-2025\\topicos\\proyecto\\tester\\models\\operationtype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|solutionrelative:models\\operationtype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|d:\\universidad\\semestre_2-2025\\topicos\\proyecto\\tester\\services\\worker.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|solutionrelative:services\\worker.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|d:\\universidad\\semestre_2-2025\\topicos\\proyecto\\tester\\services\\workermanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|solutionrelative:services\\workermanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|d:\\universidad\\semestre_2-2025\\topicos\\proyecto\\tester\\http\\httpclientprovider.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|solutionrelative:http\\httpclientprovider.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|d:\\universidad\\semestre_2-2025\\topicos\\proyecto\\tester\\utils\\randomutil.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|solutionrelative:utils\\randomutil.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|d:\\universidad\\semestre_2-2025\\topicos\\proyecto\\tester\\utils\\log.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CB65B8-6842-A46F-3C4A-094C9372B534}|Tester.csproj|solutionrelative:utils\\log.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 8,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "RandomUtil.cs",
+              "DocumentMoniker": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Utils\\RandomUtil.cs",
+              "RelativeDocumentMoniker": "Utils\\RandomUtil.cs",
+              "ToolTip": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Utils\\RandomUtil.cs",
+              "RelativeToolTip": "Utils\\RandomUtil.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-06T23:34:02.364Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "Log.cs",
+              "DocumentMoniker": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Utils\\Log.cs",
+              "RelativeDocumentMoniker": "Utils\\Log.cs",
+              "ToolTip": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Utils\\Log.cs",
+              "RelativeToolTip": "Utils\\Log.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-06T23:33:49.64Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "WorkerManager.cs",
+              "DocumentMoniker": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Services\\WorkerManager.cs",
+              "RelativeDocumentMoniker": "Services\\WorkerManager.cs",
+              "ToolTip": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Services\\WorkerManager.cs",
+              "RelativeToolTip": "Services\\WorkerManager.cs",
+              "ViewState": "AgIAACEAAAAAAAAAAAAAADwAAAAiAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-06T23:33:45.348Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Worker.cs",
+              "DocumentMoniker": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Services\\Worker.cs",
+              "RelativeDocumentMoniker": "Services\\Worker.cs",
+              "ToolTip": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Services\\Worker.cs",
+              "RelativeToolTip": "Services\\Worker.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAFUAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-06T23:33:44.19Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "OperationType.cs",
+              "DocumentMoniker": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Models\\OperationType.cs",
+              "RelativeDocumentMoniker": "Models\\OperationType.cs",
+              "ToolTip": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Models\\OperationType.cs",
+              "RelativeToolTip": "Models\\OperationType.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-06T23:33:42.371Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "OperationRequest.cs",
+              "DocumentMoniker": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Models\\OperationRequest.cs",
+              "RelativeDocumentMoniker": "Models\\OperationRequest.cs",
+              "ToolTip": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Models\\OperationRequest.cs",
+              "RelativeToolTip": "Models\\OperationRequest.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-06T23:33:41.348Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "HttpClientProvider.cs",
+              "DocumentMoniker": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Http\\HttpClientProvider.cs",
+              "RelativeDocumentMoniker": "Http\\HttpClientProvider.cs",
+              "ToolTip": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Http\\HttpClientProvider.cs",
+              "RelativeToolTip": "Http\\HttpClientProvider.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-06T23:32:35.273Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "D:\\Universidad\\Semestre_2-2025\\Topicos\\proyecto\\Tester\\Program.cs*",
+              "RelativeToolTip": "Program.cs*",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAACsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-06T23:30:30.17Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

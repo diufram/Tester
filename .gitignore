@@ -20,3 +20,6 @@ out/
 # Configuración específica del IDE
 .vscode/
 .idea/
+
+#Enviroment
+.env

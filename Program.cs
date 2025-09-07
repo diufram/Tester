@@ -2,45 +2,91 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Tester.Models;
+using Tester.Utils;
+using DotNetEnv;
+
+// Cargar variables de entorno desde el archivo .env
+Env.Load();
+
+// Leer configuración desde variables de entorno
+var token = Environment.GetEnvironmentVariable("TOKEN") ?? "Tu-Token";
+int minDelayMs = int.Parse(Environment.GetEnvironmentVariable("MIN_DELAY_MS") ?? "150");
+int maxDelayMs = int.Parse(Environment.GetEnvironmentVariable("MAX_DELAY_MS") ?? "450");
 
 // === Configuración simple ===
 Console.OutputEncoding = Encoding.UTF8;
 
-// Arreglo estático de OperationRequest (edítalo a tu necesidad):
+// Definir las operaciones de prueba (equivalente a tu arreglo original)
 var operations = new OperationRequest[]
 {
-    new(OperationType.GetAll,  "https://jsonplaceholder.typicode.com/posts"),
-    new(OperationType.GetById, "https://jsonplaceholder.typicode.com/posts/1"),
-    new(OperationType.GetAll,  "https://jsonplaceholder.typicode.com/users"),
-    new(OperationType.GetById, "https://jsonplaceholder.typicode.com/users/2"),
+    new()
+    {
+        Url = "tu-url",
+        Method = "GET",
+        Token = token  // Token Bearer opcional
+    },
+    new()
+    {
+        Url = "tu-url",
+        Method = "GET",
+    },
+    new() 
+    { 
+        Url = "tu-url", 
+        Method = "POST",
+        Body = new { 
+            nombre = RandomStringGenerator.GenerateAlphanumeric(8),  // dsgnsjkgdnskdjgsdgd
+            codigo = RandomStringGenerator.GenerateCode(6)  //jghskhg           
+         },
+        Token = token,
+    },
+    new() 
+    { 
+        Url = "tu-url", 
+        Method = "POST",
+        Body = new { 
+            nombre = RandomStringGenerator.GenerateAlphanumeric(8),  // dsgnsjkgdnskdjgsdgd
+            codigo = RandomStringGenerator.GenerateCode(6)  //jghskhg           
+        },
+    },
+    new() 
+    { 
+        Url = "tu-url", 
+        Method = "PATCH",
+        Body = new { 
+            nombre = RandomStringGenerator.GenerateAlphanumeric(8),  // dsgnsjkgdnskdjgsdgd
+            codigo = RandomStringGenerator.GenerateCode(6)  //jghskhg           
+         },
+        Token = token,
+    },
+    new() 
+    { 
+        Url = "tu-url", 
+        Method = "PUT",
+        Body = new { 
+            nombre = RandomStringGenerator.GenerateAlphanumeric(8),  // dsgnsjkgdnskdjgsdgd
+            codigo = RandomStringGenerator.GenerateCode(6)  //jghskhg           
+         },
+        Token = token,
+    },
 
-    new(OperationType.Create,  "https://jsonplaceholder.typicode.com/posts",
-        new { title = "foo", body = "bar", userId = 1 }),
-
-    new(OperationType.Update,  "https://jsonplaceholder.typicode.com/posts/1",
-        new { id = 1, title = "foo UPDATED", body = "bar", userId = 1 }),
-
-    new(OperationType.Delete,  "https://jsonplaceholder.typicode.com/posts/1"),
 };
 
 
-// Delays entre requests por worker (ajustables)
-TimeSpan minDelay = TimeSpan.FromMilliseconds(150);
-TimeSpan maxDelay = TimeSpan.FromMilliseconds(450);
 
-// Manager
-var manager = new WorkerManager(operations, minDelay, maxDelay);
+// Manager simplificado
+var manager = new WorkerManager(operations, minDelayMs, maxDelayMs);
 
 // Lanzamos 1 worker inicial
 manager.AddWorkers(1);
 
-Console.WriteLine("Testeador (.NET 8) – arreglo estático + workers dinámicos");
-Console.WriteLine("Comandos:");
+Console.WriteLine("🚀 Testeador de API (.NET) – Versión Simplificada");
+Console.WriteLine("Comandos disponibles:");
 Console.WriteLine("  add N | + N        -> agrega N workers");
 Console.WriteLine("  remove N | - N     -> quita N workers");
 Console.WriteLine("  set N | = N        -> fija exactamente N workers");
-Console.WriteLine("  pause | resume | toggle");
-Console.WriteLine("  status             -> muestra conteo/estado");
+Console.WriteLine("  status             -> muestra conteo de workers");
+Console.WriteLine("  stop               -> detiene todos los workers");
 Console.WriteLine("  quit | q           -> salir\n");
 
 string? line;
@@ -49,7 +95,6 @@ while ((line = Console.ReadLine()) is not null)
     line = line.Trim();
     if (line.Length == 0) continue;
 
-    // Normalizamos
     var lower = line.ToLowerInvariant();
 
     // Regex para "+ 3", "- 2", "= 10"
@@ -65,10 +110,10 @@ while ((line = Console.ReadLine()) is not null)
                 manager.AddWorkers(n);
                 break;
             case "-":
-                await manager.RemoveWorkersAsync(n);
+                manager.RemoveWorkers(n);
                 break;
             case "=":
-                await manager.SetWorkersAsync(n);
+                manager.SetWorkers(n);
                 break;
         }
         continue;
@@ -87,10 +132,10 @@ while ((line = Console.ReadLine()) is not null)
                 manager.AddWorkers(n);
                 break;
             case "remove":
-                await manager.RemoveWorkersAsync(n);
+                manager.RemoveWorkers(n);
                 break;
             case "set":
-                await manager.SetWorkersAsync(n);
+                manager.SetWorkers(n);
                 break;
         }
         continue;
@@ -99,29 +144,22 @@ while ((line = Console.ReadLine()) is not null)
     // Otros comandos
     switch (lower)
     {
-        case "pause":
-            manager.Pause();
-            break;
-
-        case "resume":
-            manager.Resume();
-            break;
-
-        case "toggle":
-            manager.TogglePause();
-            break;
-
         case "status":
-            Console.WriteLine($"Workers: {manager.Count} | Estado: {(manager.IsPaused ? "PAUSADO" : "EJECUTANDO")}");
+            manager.ShowStatus();
+            break;
+
+        case "stop":
+            manager.StopAll();
             break;
 
         case "quit":
         case "q":
-            await manager.StopAllAsync();
+            manager.StopAll();
             return;
 
         default:
-            Console.WriteLine("Comando no reconocido. Usa: add N | remove N | set N | (+/-/=) N | pause | resume | toggle | status | quit");
+            Console.WriteLine("❌ Comando no reconocido.");
+            Console.WriteLine("Usa: add N | remove N | set N | (+/-/=) N | status | stop | quit");
             break;
     }
 }
