@@ -17,62 +17,8 @@ int maxDelayMs = int.Parse(Environment.GetEnvironmentVariable("MAX_DELAY_MS") ??
 Console.OutputEncoding = Encoding.UTF8;
 
 // Definir las operaciones de prueba (equivalente a tu arreglo original)
-var operations = new OperationRequest[]
-{
-    new()
-    {
-        Url = "tu-url",
-        Method = "GET",
-        Token = token  // Token Bearer opcional
-    },
-    new()
-    {
-        Url = "tu-url",
-        Method = "GET",
-    },
-    new() 
-    { 
-        Url = "tu-url", 
-        Method = "POST",
-        Body = new { 
-            nombre = RandomStringGenerator.GenerateAlphanumeric(8),  // dsgnsjkgdnskdjgsdgd
-            codigo = RandomStringGenerator.GenerateCode(6)  //jghskhg           
-         },
-        Token = token,
-    },
-    new() 
-    { 
-        Url = "tu-url", 
-        Method = "POST",
-        Body = new { 
-            nombre = RandomStringGenerator.GenerateAlphanumeric(8),  // dsgnsjkgdnskdjgsdgd
-            codigo = RandomStringGenerator.GenerateCode(6)  //jghskhg           
-        },
-    },
-    new() 
-    { 
-        Url = "tu-url", 
-        Method = "PATCH",
-        Body = new { 
-            nombre = RandomStringGenerator.GenerateAlphanumeric(8),  // dsgnsjkgdnskdjgsdgd
-            codigo = RandomStringGenerator.GenerateCode(6)  //jghskhg           
-         },
-        Token = token,
-    },
-    new() 
-    { 
-        Url = "tu-url", 
-        Method = "PUT",
-        Body = new { 
-            nombre = RandomStringGenerator.GenerateAlphanumeric(8),  // dsgnsjkgdnskdjgsdgd
-            codigo = RandomStringGenerator.GenerateCode(6)  //jghskhg           
-         },
-        Token = token,
-    },
-
-};
-
-
+var operations = OperationLoader.LoadOperationsFromJson("Interfaz.json", token)
+                 ?? OperationLoader.GetDefaultOps(token);
 
 // Manager simplificado
 var manager = new WorkerManager(operations, minDelayMs, maxDelayMs);

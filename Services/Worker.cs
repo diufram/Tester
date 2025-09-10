@@ -19,9 +19,9 @@ public class Worker
     {
         _id = id;
         _operations = operations;
-        _minDelayMs = minDelayMs;
-        _maxDelayMs = maxDelayMs;
-        _random = new Random();
+        _minDelayMs = Math.Max(0, minDelayMs);
+        _maxDelayMs = Math.Max(_minDelayMs + 1, maxDelayMs);
+        _random = new Random(unchecked(id * 397) ^ Environment.TickCount); // menos colisiones entre workers
     }
 
     public void Start()
@@ -41,30 +41,31 @@ public class Worker
 
     private async Task WorkLoop()
     {
-        using var client = new HttpClient();
+        using var client = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(10) // ✅ ahora el “10s timeout” es real
+        };
 
         while (_isRunning)
         {
             try
             {
-                // Elegir operación al azar
                 var operation = _operations[_random.Next(_operations.Length)];
 
-                // Hacer la petición
                 var startTime = DateTime.Now;
                 var response = await MakeRequest(client, operation);
                 var duration = DateTime.Now - startTime;
 
-                Console.WriteLine($"[Worker {_id}] {operation.Method} {operation.Url} -> {response.StatusCode} ({duration.TotalMilliseconds:F0}ms)");
+                Console.WriteLine($"[Worker {_id}] {operation.Method} {operation.Url} -> {(int)response.StatusCode} {response.ReasonPhrase} ({duration.TotalMilliseconds:F0}ms)");
 
-                // Descansar un tiempo aleatorio
+                // descanso aleatorio
                 var delay = _random.Next(_minDelayMs, _maxDelayMs);
                 await Task.Delay(delay);
             }
             catch (HttpRequestException ex)
             {
                 Console.WriteLine($"[Worker {_id}] HTTP Error: {ex.Message}");
-                await Task.Delay(2000); // Esperar más tiempo si hay error de red
+                await Task.Delay(2000);
             }
             catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
             {
@@ -84,49 +85,83 @@ public class Worker
         }
     }
 
-    private async Task<System.Net.Http.HttpResponseMessage> MakeRequest(System.Net.Http.HttpClient client, OperationRequest operation)
+    private async Task<HttpResponseMessage> MakeRequest(HttpClient client, OperationRequest operation)
     {
-        var request = new System.Net.Http.HttpRequestMessage();
-        request.RequestUri = new Uri(operation.Url);
-
-        request.Method = operation.Method.ToUpper() switch
+        var method = operation.Method?.ToUpperInvariant() ?? "GET";
+        var request = new HttpRequestMessage
         {
-            "GET" => System.Net.Http.HttpMethod.Get,
-            "POST" => System.Net.Http.HttpMethod.Post,
-            "PUT" => System.Net.Http.HttpMethod.Put,
-            "PATCH" => System.Net.Http.HttpMethod.Patch,
-            "DELETE" => System.Net.Http.HttpMethod.Delete,
-            _ => System.Net.Http.HttpMethod.Get
+            RequestUri = new Uri(operation.Url),
+            Method = method switch
+            {
+                "GET"    => HttpMethod.Get,
+                "POST"   => HttpMethod.Post,
+                "PUT"    => HttpMethod.Put,
+                "PATCH"  => HttpMethod.Patch,
+                "DELETE" => HttpMethod.Delete,
+                _        => HttpMethod.Get
+            }
         };
 
-        // Agregar header de idempotencia para operaciones POST, PUT, PATCH
-        if (operation.Method.ToUpper() is "POST" or "PUT" or "PATCH")
+        // ✅ Headers personalizados por operación
+        if (operation.Headers is not null)
+        {
+            foreach (var kv in operation.Headers)
+            {
+                // Evitar colisión con Authorization que seteamos abajo
+                if (!kv.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                    request.Headers.TryAddWithoutValidation(kv.Key, kv.Value);
+            }
+        }
+
+        // ✅ Idempotencia para POST/PUT/PATCH
+        if (method is "POST" or "PUT" or "PATCH")
         {
             var idempotencyKey = GenerateIdempotencyKey();
             var idempotencyHeaderName = Environment.GetEnvironmentVariable("IDEMPOTENCY_KEY_HEADER") ?? "x-idempotency-key";
-            request.Headers.Add(idempotencyHeaderName, idempotencyKey);
+            request.Headers.TryAddWithoutValidation(idempotencyHeaderName, idempotencyKey);
         }
 
-        if (operation.Body != null && (operation.Method == "POST" || operation.Method == "PUT" || operation.Method == "PATCH"))
+        // ✅ Body robusto (respeta JsonElement/string ya formateados)
+        if (operation.Body is not null && (method is "POST" or "PUT" or "PATCH" or "DELETE"))
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(operation.Body);
-            request.Content = new System.Net.Http.StringContent(json, Encoding.UTF8, "application/json");
+            request.Content = ToJsonContent(operation.Body);
         }
 
-        if (!string.IsNullOrEmpty(operation.Token))
+        // ✅ Bearer opcional
+        if (!string.IsNullOrWhiteSpace(operation.Token))
         {
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", operation.Token);
         }
 
+        // Aceptar JSON por defecto (si el backend lo usa)
+        request.Headers.TryAddWithoutValidation("Accept", "application/json");
+
         return await client.SendAsync(request);
+    }
+
+    private static StringContent ToJsonContent(object body)
+    {
+        // Si viene como string, asumimos que ya es JSON (o texto) y lo enviamos tal cual.
+        if (body is string s)
+            return new StringContent(s, Encoding.UTF8, "application/json");
+
+        // Si viene como JsonElement (típico al deserializar desde Interfaz.json), escribirlo “crudo”.
+        if (body is JsonElement el)
+            return new StringContent(el.GetRawText(), Encoding.UTF8, "application/json");
+
+        // Si viene como objeto arbitrario (anónimo, diccionario, POCO), serializar.
+        var json = JsonSerializer.Serialize(body, new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+        return new StringContent(json, Encoding.UTF8, "application/json");
     }
 
     private string GenerateIdempotencyKey()
     {
-        // Generar una clave única usando GUID + timestamp para mayor unicidad
-        var guid = Guid.NewGuid().ToString("N"); // Sin guiones
+        var guid = Guid.NewGuid().ToString("N");
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         return $"{guid}_{timestamp}";
     }
 }
-

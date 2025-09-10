@@ -1,0 +1,30 @@
+[
+  {
+    "url": "http://localhost:5239/api/Alumno",
+    "method": "GET"
+  },
+  {
+    "url": "http://localhost:5239/api/Alumno",
+    "method": "POST",
+    "body": {
+      "nombre": "Esta es una Prueba1",
+      "ppa": 100,
+      "telefono": 700000,
+      "registro": 100002
+    }
+  },
+  {
+    "url": "http://localhost:5239/api/Alumno/140",
+    "method": "PUT",
+    "body": {
+      "nombre": "Esta es una2",
+      "ppa": 100,
+      "telefono": 700000,
+      "registro": 100000
+    }
+  },
+  {
+    "url": "http://localhost:5239/api/Alumno/3",
+    "method": "DELETE"
+  }
+]
