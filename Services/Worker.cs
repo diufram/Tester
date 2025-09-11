@@ -2,6 +2,7 @@ using Tester.Models;
 using Tester.Utils;
 using System.Text;
 using System.Text.Json;
+using System.Net;
 
 namespace Tester.Services;
 
@@ -45,7 +46,7 @@ public class Worker
     {
         using var client = new HttpClient
         {
-            Timeout = TimeSpan.FromSeconds(10) // ✅ ahora el “10s timeout” es real
+            Timeout = TimeSpan.FromSeconds(10) 
         };
 
         while (_isRunning)
@@ -55,13 +56,17 @@ public class Worker
                 var operation = _operations[_random.Next(_operations.Length)];
 
                 var startTime = DateTime.Now;
-                var response = await MakeRequest(client, operation);
+                var response = await MakeRequest2(client, operation);
                 var duration = DateTime.Now - startTime;
 
-                Console.WriteLine($"[Worker {_id}] {operation.Method} {operation.Url} -> {(int)response.StatusCode} {response.ReasonPhrase} ({duration.TotalMilliseconds:F0}ms)");
+                // Determinar si fue exitoso (códigos 2xx)
+                bool isSuccess = IsSuccessStatusCode(response.StatusCode);
+                string statusEmoji = isSuccess ? "✅" : "❌";
+
+                Console.WriteLine($"[Worker {_id}] {operation.Method} {operation.Url} -> {(int)response.StatusCode} {response.ReasonPhrase} {statusEmoji} ({duration.TotalMilliseconds:F0}ms)");
                 
-                // Reportar la ejecución del endpoint al manager
-                _manager.RecordEndpointExecution(operation.Method ?? "GET", operation.Url);
+                // Reportar la ejecución del endpoint al manager (con indicador de éxito/error)
+                _manager.RecordEndpointExecution(operation.Method ?? "GET", operation.Url, isSuccess);
 
                 // descanso aleatorio
                 var delay = _random.Next(_minDelayMs, _maxDelayMs);
@@ -83,6 +88,11 @@ public class Worker
                 await Task.Delay(1000);
             }
         }
+    }
+
+    private static bool IsSuccessStatusCode(HttpStatusCode statusCode)
+    {
+        return ((int)statusCode >= 200) && ((int)statusCode <= 299);
     }
 
     private async Task<HttpResponseMessage> MakeRequest(HttpClient client, OperationRequest operation)
@@ -128,6 +138,46 @@ public class Worker
         // Aceptar JSON por defecto (si el backend lo usa)
         request.Headers.TryAddWithoutValidation("Accept", "application/json");
 
+        return await client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> MakeRequest2(HttpClient client, OperationRequest operation)
+    {
+        var method = operation.Method?.ToUpperInvariant() ?? "GET";
+        var ip = Environment.GetEnvironmentVariable("IP") ?? throw new InvalidOperationException("Variable IP no encontrada en .env");
+        var finalUrl = $"{ip}{operation.Url}";
+        var request = new HttpRequestMessage
+        {
+            RequestUri = new Uri(finalUrl),
+            Method = method switch
+            {
+                "GET"    => HttpMethod.Get,
+                "POST"   => HttpMethod.Post,
+                "PUT"    => HttpMethod.Put,
+                "PATCH"  => HttpMethod.Patch,
+                "DELETE" => HttpMethod.Delete,
+                _        => HttpMethod.Get
+            }
+        };
+        //Headers personalizados por operación
+        if (operation.Headers is not null)
+        {
+            foreach (var kv in operation.Headers)
+            {
+                // Evitar colisión con Authorization que seteamos abajo
+                if (!kv.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                    request.Headers.TryAddWithoutValidation(kv.Key, kv.Value);
+            }
+        }
+        if (operation.Body is not null && (method is "POST" or "PUT" or "PATCH" or "DELETE"))
+        {
+            request.Content = ToJsonContent(operation.Body);
+        }
+        if (!string.IsNullOrWhiteSpace(operation.Token))
+        {
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", operation.Token);
+        }
+        request.Headers.TryAddWithoutValidation("Accept", "application/json");
         return await client.SendAsync(request);
     }
 
