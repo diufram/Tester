@@ -7,8 +7,8 @@
     "url": "/api/carreras",
     "method": "POST",
     "body": {
-      "nombre": "Ingeniería de Sistemas",
-      "codigo": "ING-SIS-001"
+      "nombre": "Ingeniería de Industrial",
+      "codigo": "ING-IND-001"
     }
   },
   {
@@ -478,9 +478,5 @@
     "body": {
       "idPrerequisito": 3
     }
-  },
-  {
-    "url": "/api/prerequisitos/materia/1",
-    "method": "GET"
   }
 ]

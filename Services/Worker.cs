@@ -9,18 +9,16 @@ namespace Tester.Services;
 public class Worker
 {
     private readonly int _id;
-    private readonly OperationRequest[] _operations;
+    private readonly WorkerManager _manager;
     private readonly int _minDelayMs;
     private readonly int _maxDelayMs;
     private readonly Random _random;
-    private readonly WorkerManager _manager;
     private bool _isRunning;
     private Task _task = Task.CompletedTask;
 
-    public Worker(int id, OperationRequest[] operations, int minDelayMs, int maxDelayMs, WorkerManager manager)
+    public Worker(int id, int minDelayMs, int maxDelayMs, WorkerManager manager)
     {
         _id = id;
-        _operations = operations;
         _minDelayMs = Math.Max(0, minDelayMs);
         _maxDelayMs = Math.Max(_minDelayMs + 1, maxDelayMs);
         _random = new Random(unchecked(id * 397) ^ Environment.TickCount); // menos colisiones entre workers
@@ -53,7 +51,15 @@ public class Worker
         {
             try
             {
-                var operation = _operations[_random.Next(_operations.Length)];
+                var operation = _manager.GetNextOperation(_random);
+                if (operation == null)
+                {
+                    // No hay operaciones disponibles, esperar un poco más
+                    Console.WriteLine($"[Worker {_id}] Sin operaciones disponibles, esperando...");
+                    await Task.Delay(5000); // Esperar 5 segundos antes de intentar de nuevo
+                    continue;
+                }
+
 
                 var startTime = DateTime.Now;
                 var response = await MakeRequest2(client, operation);

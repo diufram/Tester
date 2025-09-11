@@ -5,18 +5,56 @@ namespace Tester.Services;
 public class WorkerManager
 {
     private readonly List<Worker> _workers = new();
-    private readonly OperationRequest[] _operations;
-    private readonly int _minDelayMs;
-    private readonly int _maxDelayMs;
+    private readonly List<OperationRequest> _operations;
     private readonly Dictionary<string, int> _endpointCounts = new();
     private readonly Dictionary<string, int> _endpointErrors = new();
+    private readonly int _minDelayMs;
+    private readonly int _maxDelayMs;
     private readonly object _countLock = new();
+    private readonly object _operationsLock = new();
+    private readonly bool _removeWriteOperations;
+    private readonly int _initialCount;
+    private readonly int _initialWriteCount;
 
     public WorkerManager(OperationRequest[] operations, int minDelayMs = 1000, int maxDelayMs = 3000)
     {
-        _operations = operations;
         _minDelayMs = minDelayMs;
         _maxDelayMs = maxDelayMs;
+        _removeWriteOperations = bool.Parse(Environment.GetEnvironmentVariable("REMOVE_WRITE_OPERATIONS") ?? "true");
+        
+        _operations = new List<OperationRequest>(operations);
+        _initialCount = operations.Length;
+        _initialWriteCount = operations.Count(op => IsWriteOperation(op.Method?.ToUpperInvariant() ?? "GET"));
+    }
+
+    private static bool IsWriteOperation(string method)
+    {
+        return method switch
+        {
+            "POST" or "PUT" or "PATCH" or "DELETE" => true,
+            _ => false
+        };
+    }
+
+    public OperationRequest? GetNextOperation(Random random)
+    {
+        lock (_operationsLock)
+        {
+            if (_operations.Count == 0) return null;
+            
+            // Sacar operación random
+            var index = random.Next(_operations.Count);
+            var operation = _operations[index];
+            
+            // Si es de escritura Y la configuración dice que debe eliminarse
+            var method = operation.Method?.ToUpperInvariant() ?? "GET";
+            if (IsWriteOperation(method) && _removeWriteOperations)
+            {
+                _operations.RemoveAt(index);
+            }
+            
+            return operation;
+        }
     }
 
     public void RecordEndpointExecution(string method, string url, bool isSuccess = true)
@@ -37,7 +75,7 @@ public class WorkerManager
     {
         for (int i = 0; i < count; i++)
         {
-            var worker = new Worker(_workers.Count + 1, _operations, _minDelayMs, _maxDelayMs, this);
+            var worker = new Worker(_workers.Count + 1, _minDelayMs, _maxDelayMs, this);
             _workers.Add(worker);
             worker.Start();
         }
