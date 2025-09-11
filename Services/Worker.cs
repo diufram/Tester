@@ -12,16 +12,18 @@ public class Worker
     private readonly int _minDelayMs;
     private readonly int _maxDelayMs;
     private readonly Random _random;
+    private readonly WorkerManager _manager;
     private bool _isRunning;
     private Task _task = Task.CompletedTask;
 
-    public Worker(int id, OperationRequest[] operations, int minDelayMs, int maxDelayMs)
+    public Worker(int id, OperationRequest[] operations, int minDelayMs, int maxDelayMs, WorkerManager manager)
     {
         _id = id;
         _operations = operations;
         _minDelayMs = Math.Max(0, minDelayMs);
         _maxDelayMs = Math.Max(_minDelayMs + 1, maxDelayMs);
         _random = new Random(unchecked(id * 397) ^ Environment.TickCount); // menos colisiones entre workers
+        _manager = manager;
     }
 
     public void Start()
@@ -57,6 +59,9 @@ public class Worker
                 var duration = DateTime.Now - startTime;
 
                 Console.WriteLine($"[Worker {_id}] {operation.Method} {operation.Url} -> {(int)response.StatusCode} {response.ReasonPhrase} ({duration.TotalMilliseconds:F0}ms)");
+                
+                // Reportar la ejecución del endpoint al manager
+                _manager.RecordEndpointExecution(operation.Method ?? "GET", operation.Url);
 
                 // descanso aleatorio
                 var delay = _random.Next(_minDelayMs, _maxDelayMs);
@@ -70,11 +75,6 @@ public class Worker
             catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
             {
                 Console.WriteLine($"[Worker {_id}] Timeout: La petición tardó más de 10 segundos");
-                await Task.Delay(1000);
-            }
-            catch (TaskCanceledException)
-            {
-                Console.WriteLine($"[Worker {_id}] Timeout: La petición fue cancelada");
                 await Task.Delay(1000);
             }
             catch (Exception ex)
@@ -111,14 +111,6 @@ public class Worker
                 if (!kv.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
                     request.Headers.TryAddWithoutValidation(kv.Key, kv.Value);
             }
-        }
-
-        // ✅ Idempotencia para POST/PUT/PATCH
-        if (method is "POST" or "PUT" or "PATCH")
-        {
-            var idempotencyKey = GenerateIdempotencyKey();
-            var idempotencyHeaderName = Environment.GetEnvironmentVariable("IDEMPOTENCY_KEY_HEADER") ?? "x-idempotency-key";
-            request.Headers.TryAddWithoutValidation(idempotencyHeaderName, idempotencyKey);
         }
 
         // ✅ Body robusto (respeta JsonElement/string ya formateados)
@@ -158,10 +150,4 @@ public class Worker
         return new StringContent(json, Encoding.UTF8, "application/json");
     }
 
-    private string GenerateIdempotencyKey()
-    {
-        var guid = Guid.NewGuid().ToString("N");
-        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        return $"{guid}_{timestamp}";
-    }
 }

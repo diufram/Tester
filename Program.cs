@@ -32,6 +32,7 @@ Console.WriteLine("  add N | + N        -> agrega N workers");
 Console.WriteLine("  remove N | - N     -> quita N workers");
 Console.WriteLine("  set N | = N        -> fija exactamente N workers");
 Console.WriteLine("  status             -> muestra conteo de workers");
+Console.WriteLine("  stats              -> muestra estadísticas de endpoints");
 Console.WriteLine("  stop               -> detiene todos los workers");
 Console.WriteLine("  quit | q           -> salir\n");
 
@@ -87,11 +88,16 @@ while ((line = Console.ReadLine()) is not null)
         continue;
     }
 
+
     // Otros comandos
     switch (lower)
     {
         case "status":
             manager.ShowStatus();
+            break;
+
+        case "stats":
+            manager.ShowStats();
             break;
 
         case "stop":
@@ -105,7 +111,7 @@ while ((line = Console.ReadLine()) is not null)
 
         default:
             Console.WriteLine("❌ Comando no reconocido.");
-            Console.WriteLine("Usa: add N | remove N | set N | (+/-/=) N | status | stop | quit");
+            Console.WriteLine("Usa: add N | remove N | set N | (+/-/=) N | status | stats | stop | quit");
             break;
     }
 }

@@ -8,6 +8,8 @@ public class WorkerManager
     private readonly OperationRequest[] _operations;
     private readonly int _minDelayMs;
     private readonly int _maxDelayMs;
+    private readonly Dictionary<string, int> _endpointCounts = new();
+    private readonly object _countLock = new();
 
     public WorkerManager(OperationRequest[] operations, int minDelayMs = 1000, int maxDelayMs = 3000)
     {
@@ -16,11 +18,20 @@ public class WorkerManager
         _maxDelayMs = maxDelayMs;
     }
 
+    public void RecordEndpointExecution(string method, string url)
+    {
+        var endpoint = $"{method.ToUpperInvariant()} {url}";
+        lock (_countLock)
+        {
+            _endpointCounts[endpoint] = _endpointCounts.GetValueOrDefault(endpoint, 0) + 1;
+        }
+    }
+
     public void AddWorkers(int count)
     {
         for (int i = 0; i < count; i++)
         {
-            var worker = new Worker(_workers.Count + 1, _operations, _minDelayMs, _maxDelayMs);
+            var worker = new Worker(_workers.Count + 1, _operations, _minDelayMs, _maxDelayMs, this);
             _workers.Add(worker);
             worker.Start();
         }
@@ -76,4 +87,30 @@ public class WorkerManager
     {
         Console.WriteLine($" Workers activos: {_workers.Count}");
     }
+
+    public void ShowStats()
+    {
+        lock (_countLock)
+        {
+            if (_endpointCounts.Count == 0)
+            {
+                Console.WriteLine(" No hay estadísticas disponibles aún");
+                return;
+            }
+
+            Console.WriteLine("\n📊 Estadísticas de Endpoints:");
+            
+            var sortedEndpoints = _endpointCounts.OrderByDescending(kvp => kvp.Value);
+            
+            foreach (var kvp in sortedEndpoints)
+            {
+                Console.WriteLine($" {kvp.Key} - {kvp.Value}");
+            }
+            
+            var totalRequests = _endpointCounts.Values.Sum();
+            Console.WriteLine($"\n Total: {totalRequests} requests");
+            Console.WriteLine();
+        }
+    }
+
 }

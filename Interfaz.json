@@ -1,30 +1,26 @@
 [
   {
-    "url": "http://localhost:5239/api/Alumno",
+    "url": "http://localhost:3000/api/carreras",
     "method": "GET"
   },
   {
-    "url": "http://localhost:5239/api/Alumno",
+    "url": "http://localhost:3000/api/carreras",
     "method": "POST",
     "body": {
-      "nombre": "Esta es una Prueba1",
-      "ppa": 100,
-      "telefono": 700000,
-      "registro": 100002
+      "nombre": "Ingeniería de Sistemas",
+      "codigo": "ING-SIS-001"
     }
   },
   {
-    "url": "http://localhost:5239/api/Alumno/140",
-    "method": "PUT",
+    "url": "http://localhost:3000/api/carreras/1",
+    "method": "GET"
+  },
+  {
+    "url": "http://localhost:3000/api/carreras/1",
+    "method": "PATCH",
     "body": {
-      "nombre": "Esta es una2",
-      "ppa": 100,
-      "telefono": 700000,
-      "registro": 100000
+      "nombre": "Ingeniería en Sistemas Computacionales",
+      "codigo": "ING-SIS-002"
     }
-  },
-  {
-    "url": "http://localhost:5239/api/Alumno/3",
-    "method": "DELETE"
   }
 ]
