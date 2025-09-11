@@ -94,7 +94,6 @@ public class WorkerManager
         Console.WriteLine($" Workers activos: {_workers.Count}");
     }
 
-    // ← CAMBIAR ESTE MÉTODO COMPLETO
     public void ShowStats()
     {
         lock (_countLock)
@@ -151,7 +150,6 @@ public class WorkerManager
         }
     }
 
-    // ← AGREGAR ESTE MÉTODO
     private static int GetMethodOrder(string method)
     {
         return method.ToUpperInvariant() switch
