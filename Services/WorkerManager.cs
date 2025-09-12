@@ -1,4 +1,7 @@
 using Tester.Models;
+using System.Text.Json;
+using Tester.Utils;
+
 
 namespace Tester.Services;
 
@@ -12,29 +15,109 @@ public class WorkerManager
     private readonly int _maxDelayMs;
     private readonly object _countLock = new();
     private readonly object _operationsLock = new();
-    private readonly bool _removeWriteOperations;
     private readonly int _initialCount;
-    private readonly int _initialWriteCount;
 
     public WorkerManager(OperationRequest[] operations, int minDelayMs = 1000, int maxDelayMs = 3000)
     {
         _minDelayMs = minDelayMs;
         _maxDelayMs = maxDelayMs;
-        _removeWriteOperations = bool.Parse(Environment.GetEnvironmentVariable("REMOVE_WRITE_OPERATIONS") ?? "true");
         
         _operations = new List<OperationRequest>(operations);
         _initialCount = operations.Length;
-        _initialWriteCount = operations.Count(op => IsWriteOperation(op.Method?.ToUpperInvariant() ?? "GET"));
     }
 
-    private static bool IsWriteOperation(string method)
+    
+
+    private object ProcessPostBodyCopy(object body, string url)
     {
-        return method switch
+        try
         {
-            "POST" or "PUT" or "PATCH" or "DELETE" => true,
-            _ => false
+            Dictionary<string, object>? dict;
+
+            // Normalizar todo a Dictionary<string, object>
+            if (body is string jsonString)
+            {
+                dict = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonString);
+            }
+            else if (body is JsonElement element)
+            {
+                dict = JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText());
+            }
+            else if (body is Dictionary<string, object> existingDict)
+            {
+                // CREAR UNA COPIA PROFUNDA del diccionario existente
+                var serialized = JsonSerializer.Serialize(existingDict);
+                dict = JsonSerializer.Deserialize<Dictionary<string, object>>(serialized);
+            }
+            else
+            {
+                return body; // tipo no esperado → devolver tal cual
+            }
+
+            if (dict == null) return body;
+
+            // Procesar valores recursivamente en la copia
+            ProcessDictionaryFields(dict, url);
+
+            return dict;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error procesando body POST: {ex.Message}");
+            return body;
+        }
+    }
+
+    private void ProcessDictionaryFields(Dictionary<string, object> dict, string url)
+    {
+        foreach (var key in dict.Keys.ToList())
+        {
+            if (dict[key] is JsonElement element)
+            {
+                dict[key] = ConvertJsonElement(element, url);
+            }
+            else if (dict[key] is Dictionary<string, object> nestedDict)
+            {
+                ProcessDictionaryFields(nestedDict, url);
+            }
+            else if (dict[key] is string str && str.Equals("string", StringComparison.OrdinalIgnoreCase))
+            {
+                dict[key] = $"{url}+{RandomStringGenerator.GenerateAlphanumeric(8)}";
+            }
+        }
+    }
+
+    private object ConvertJsonElement(JsonElement element, string url)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.String when element.GetString()?.Equals("string", StringComparison.OrdinalIgnoreCase) == true
+                => $"{url}+{RandomStringGenerator.GenerateAlphanumeric(8)}",
+
+            JsonValueKind.Object =>
+                JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText()) is { } nestedDict
+                    ? ReturnProcessedDict(nestedDict, url)
+                    : element.GetRawText(),
+
+            JsonValueKind.Array
+                => element.EnumerateArray()
+                        .Select(e => ConvertJsonElement(e, url))
+                        .ToList(),
+
+            JsonValueKind.String => element.GetString()!,
+            JsonValueKind.Number => element.GetDouble(),
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Null => null!,
+            _ => element.ToString()
         };
     }
+    private object ReturnProcessedDict(Dictionary<string, object> dict, string url)
+    {
+        ProcessDictionaryFields(dict, url);
+        return dict;
+    }
+
 
     public OperationRequest? GetNextOperation(Random random)
     {
@@ -44,16 +127,26 @@ public class WorkerManager
             
             // Sacar operación random
             var index = random.Next(_operations.Count);
-            var operation = _operations[index];
+            var originalOperation = _operations[index];
             
-            // Si es de escritura Y la configuración dice que debe eliminarse
-            var method = operation.Method?.ToUpperInvariant() ?? "GET";
-            if (IsWriteOperation(method) && _removeWriteOperations)
+            // Crear una COPIA de la operación para no modificar la original
+            var operationCopy = new OperationRequest
             {
-                _operations.RemoveAt(index);
+                Url = originalOperation.Url,
+                Method = originalOperation.Method,
+                Headers = originalOperation.Headers, // Las headers normalmente no cambian
+                Token = originalOperation.Token,
+                Body = originalOperation.Body // Inicialmente la misma referencia
+            };
+            
+            // Si es POST, procesar el body creando una copia profunda
+            var method = operationCopy.Method?.ToUpperInvariant() ?? "GET";
+            if (method == "POST" && operationCopy.Body != null)
+            {
+                operationCopy.Body = ProcessPostBodyCopy(operationCopy.Body, operationCopy.Url);
             }
             
-            return operation;
+            return operationCopy;
         }
     }
 

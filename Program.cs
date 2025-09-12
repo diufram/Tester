@@ -88,7 +88,6 @@ while ((line = Console.ReadLine()) is not null)
         continue;
     }
 
-
     // Otros comandos
     switch (lower)
     {
