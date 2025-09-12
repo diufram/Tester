@@ -11,6 +11,7 @@ public class WorkerManager
     private readonly List<OperationRequest> _operations;
     private readonly Dictionary<string, int> _endpointCounts = new();
     private readonly Dictionary<string, int> _endpointErrors = new();
+    private readonly Dictionary<string, int> _endpointTimeouts = new();
     private readonly int _minDelayMs;
     private readonly int _maxDelayMs;
     private readonly object _countLock = new();
@@ -26,7 +27,36 @@ public class WorkerManager
         _initialCount = operations.Length;
     }
 
-    
+    public OperationRequest? GetNextOperation(Random random)
+    {
+        lock (_operationsLock)
+        {
+            if (_operations.Count == 0) return null;
+            
+            // Sacar operación random
+            var index = random.Next(_operations.Count);
+            var originalOperation = _operations[index];
+            
+            // Crear una COPIA de la operación para no modificar la original
+            var operationCopy = new OperationRequest
+            {
+                Url = originalOperation.Url,
+                Method = originalOperation.Method,
+                Headers = originalOperation.Headers, // Las headers normalmente no cambian
+                Token = originalOperation.Token,
+                Body = originalOperation.Body // Inicialmente la misma referencia
+            };
+            
+            // Si es POST, procesar el body creando una copia profunda
+            var method = operationCopy.Method?.ToUpperInvariant() ?? "GET";
+            if (method == "POST" && operationCopy.Body != null)
+            {
+                operationCopy.Body = ProcessPostBodyCopy(operationCopy.Body, operationCopy.Url);
+            }
+            
+            return operationCopy;
+        }
+    }
 
     private object ProcessPostBodyCopy(object body, string url)
     {
@@ -118,38 +148,6 @@ public class WorkerManager
         return dict;
     }
 
-
-    public OperationRequest? GetNextOperation(Random random)
-    {
-        lock (_operationsLock)
-        {
-            if (_operations.Count == 0) return null;
-            
-            // Sacar operación random
-            var index = random.Next(_operations.Count);
-            var originalOperation = _operations[index];
-            
-            // Crear una COPIA de la operación para no modificar la original
-            var operationCopy = new OperationRequest
-            {
-                Url = originalOperation.Url,
-                Method = originalOperation.Method,
-                Headers = originalOperation.Headers, // Las headers normalmente no cambian
-                Token = originalOperation.Token,
-                Body = originalOperation.Body // Inicialmente la misma referencia
-            };
-            
-            // Si es POST, procesar el body creando una copia profunda
-            var method = operationCopy.Method?.ToUpperInvariant() ?? "GET";
-            if (method == "POST" && operationCopy.Body != null)
-            {
-                operationCopy.Body = ProcessPostBodyCopy(operationCopy.Body, operationCopy.Url);
-            }
-            
-            return operationCopy;
-        }
-    }
-
     public void RecordEndpointExecution(string method, string url, bool isSuccess = true)
     {
         var endpoint = $"{method.ToUpperInvariant()} {url}";
@@ -161,6 +159,15 @@ public class WorkerManager
             {
                 _endpointErrors[endpoint] = _endpointErrors.GetValueOrDefault(endpoint, 0) + 1;
             }
+        }
+    }
+
+    public void RecordEndpointTimeout(string method, string url)
+    {
+        var endpoint = $"{method.ToUpperInvariant()} {url}";
+        lock (_countLock)
+        {
+            _endpointTimeouts[endpoint] = _endpointTimeouts.GetValueOrDefault(endpoint, 0) + 1;
         }
     }
 
@@ -248,9 +255,10 @@ public class WorkerManager
                 var method = methodGroup.Key;
                 var totalForMethod = methodGroup.Sum(kvp => kvp.Value);
                 var errorsForMethod = methodGroup.Sum(kvp => _endpointErrors.GetValueOrDefault(kvp.Key, 0));
-                var successRate = totalForMethod > 0 ? ((totalForMethod - errorsForMethod) * 100.0 / totalForMethod) : 100;
+                var timeoutsForMethod = methodGroup.Sum(kvp => _endpointTimeouts.GetValueOrDefault(kvp.Key, 0)); // 🆕
+                var successRate = totalForMethod > 0 ? ((totalForMethod - errorsForMethod - timeoutsForMethod) * 100.0 / totalForMethod) : 100;
                 
-                Console.WriteLine($"\n🔹 {method} ({totalForMethod} requests, {errorsForMethod} errores, {successRate:F1}% éxito):");
+                Console.WriteLine($"\n🔹 {method} ({totalForMethod} requests, {errorsForMethod} errores, {timeoutsForMethod} timeouts, {successRate:F1}% éxito):");
                 
                 // Ordenar endpoints dentro del método por número de peticiones (descendente)
                 var sortedEndpoints = methodGroup.OrderByDescending(kvp => kvp.Value);
@@ -259,12 +267,18 @@ public class WorkerManager
                 {
                     var url = kvp.Key.Substring(method.Length + 1); // Quitar "GET " del inicio
                     var errors = _endpointErrors.GetValueOrDefault(kvp.Key, 0);
-                    var success = kvp.Value - errors;
+                    var timeouts = _endpointTimeouts.GetValueOrDefault(kvp.Key, 0); // 🆕
+                    var success = kvp.Value - errors - timeouts; // 🆕 Restar también timeouts
                     var endpointSuccessRate = kvp.Value > 0 ? (success * 100.0 / kvp.Value) : 100;
                     
-                    if (errors > 0)
+                    if (errors > 0 || timeouts > 0) // 🆕 Mostrar si hay errores O timeouts
                     {
-                        Console.WriteLine($"   {url} - {kvp.Value} total ({success} ✅, {errors} ❌, {endpointSuccessRate:F1}%)");
+                        var statusText = "";
+                        if (success > 0) statusText += $"{success} ✅";
+                        if (errors > 0) statusText += $", {errors} ❌";
+                        if (timeouts > 0) statusText += $", {timeouts} ⏰"; // 🆕 Emoji para timeouts
+                        
+                        Console.WriteLine($"   {url} - {kvp.Value} total ({statusText.TrimStart(',', ' ')}, {endpointSuccessRate:F1}%)");
                     }
                     else
                     {
@@ -275,8 +289,10 @@ public class WorkerManager
             
             var totalRequests = _endpointCounts.Values.Sum();
             var totalErrors = _endpointErrors.Values.Sum();
-            var totalSuccessRate = totalRequests > 0 ? ((totalRequests - totalErrors) * 100.0 / totalRequests) : 100;
-            Console.WriteLine($"\n📈 Total general: {totalRequests} requests ({totalRequests - totalErrors} ✅, {totalErrors} ❌, {totalSuccessRate:F1}% éxito)");
+            var totalTimeouts = _endpointTimeouts.Values.Sum(); // 🆕
+            var totalSuccessRate = totalRequests > 0 ? ((totalRequests - totalErrors - totalTimeouts) * 100.0 / totalRequests) : 100;
+            
+            Console.WriteLine($"\n📈 Total general: {totalRequests} requests ({totalRequests - totalErrors - totalTimeouts} ✅, {totalErrors} ❌, {totalTimeouts} ⏰, {totalSuccessRate:F1}% éxito)");
             Console.WriteLine();
         }
     }
