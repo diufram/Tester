@@ -1,26 +1,58 @@
 [
   {
-    "url": "/api/carreras",
+    "url": "/api/Alumno",
     "method": "GET"
   },
   {
-    "url": "/api/carreras",
+    "url": "/api/Alumno",
     "method": "POST",
     "body": {
       "nombre": "string",
-      "codigo": "string"
+      "ppa": 100,
+      "telefono": 700000,
+      "registro": 100002
     }
   },
   {
-    "url": "/api/carreras/1",
+    "url": "/api/Alumno/33366",
+    "method": "PUT",
+    "body": {
+      "nombre": "string",
+      "ppa": 100,
+      "telefono": 700000,
+      "registro": 100002
+    }
+  },
+  {
+    "url": "/api/Alumno/3",
+    "method": "DELETE"
+  },
+  {
+    "url": "/api/Alumno",
     "method": "GET"
   },
   {
-    "url": "/api/carreras/1",
-    "method": "PATCH",
+    "url": "/api/Materia",
+    "method": "POST",
     "body": {
-      "nombre": "Ingeniería en Sistemas Computacionales",
-      "codigo": "ING-SIS-002"
+      "credito": 5,
+      "esElectiva": true,
+      "nombre": "string",
+      "sigla": "string"
     }
+  },
+  {
+    "url": "/api/Materia/2",
+    "method": "PUT",
+    "body": {
+      "credito": 1,
+      "esElectiva": true,
+      "nombre": "string",
+      "sigla": "ASA"
+    }
+  },
+  {
+    "url": "/api/Materia/400",
+    "method": "DELETE"
   }
 ]
