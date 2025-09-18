@@ -1,26 +1,380 @@
 [
   {
-    "url": "/api/carreras",
-    "method": "GET"
-  },
-  {
-    "url": "/api/carreras",
+    "url": "/api/teacher?async=true",
     "method": "POST",
     "body": {
-      "nombre": "string",
-      "codigo": "string"
+      "code": 123456,
+      "ci": 13173632,
+      "name": "APELLIDOS NOMBRES DOCENTE 001",
+      "email": "docente001@gmail.com",
+      "cellphone": 67788553
     }
   },
   {
-    "url": "/api/carreras/1",
+    "url": "/api/teacher?async=true",
     "method": "GET"
   },
   {
-    "url": "/api/carreras/1",
+    "url": "/api/teacher/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/teacher/1?async=true",
     "method": "PATCH",
     "body": {
-      "nombre": "Ingeniería en Sistemas Computacionales",
-      "codigo": "ING-SIS-002"
+      "code": 123456,
+      "ci": 13173632,
+      "name": "APELLIDOS NOMBRES DOCENTE 001",
+      "email": "docente001@gmail.com",
+      "cellphone": 67788553
+    }
+  },
+  {
+    "url": "/api/student?async=true",
+    "method": "POST",
+    "body": {
+      "code": 220014551,
+      "ci": 14183129,
+      "name": "APELLIDOS NOMBRES ESTUDIANTE 001",
+      "email": "estudiante001@gmail.com",
+      "cellphone": 73832536
+    }
+  },
+  {
+    "url": "/api/student?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/student/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/student/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "code": 220014551,
+      "ci": 14183129,
+      "name": "APELLIDOS NOMBRES ESTUDIANTE 001",
+      "email": "estudiante001@gmail.com",
+      "cellphone": 73832536
+    }
+  },
+  {
+    "url": "/api/grade?async=true",
+    "method": "POST",
+    "body": {
+      "number": 100,
+      "studentId": 1,
+      "registrationDetailId": 1
+    }
+  },
+  {
+    "url": "/api/grade?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/grade/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/grade/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "number": 100,
+      "studentId": 1,
+      "registrationDetailId": 1
+    }
+  },
+  {
+    "url": "/api/study-plan?async=true",
+    "method": "POST",
+    "body": {
+      "code": "187-4",
+      "careerId": 1
+    }
+  },
+  {
+    "url": "/api/study-plan?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/study-plan/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/study-plan/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "code": "187-4",
+      "careerId": 1
+    }
+  },
+  {
+    "url": "/api/career?async=true",
+    "method": "POST",
+    "body": {
+      "code": "187-4",
+      "name": "ING. EN SISTEMAS"
+    }
+  },
+  {
+    "url": "/api/career?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/career/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/career/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "code": "187-4",
+      "name": "ING. EN SISTEMAS"
+    }
+  },
+  {
+    "url": "/api/subject?async=true",
+    "method": "POST",
+    "body": {
+      "code": "INF777",
+      "name": "MICROSERVICIOS"
+    }
+  },
+  {
+    "url": "/api/subject?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/subject/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/subject/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "code": "INF777",
+      "name": "MICROSERVICIOS"
+    }
+  },
+  
+  {
+    "url": "/api/plan-subject?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/plan-subject/1?async=true",
+    "method": "GET"
+  },
+  
+  {
+    "url": "/api/prerequisite?async=true",
+    "method": "POST",
+    "body": {
+      "planSubjectId": 6,
+      "prerequisiteId": 2
+    }
+  },
+  {
+    "url": "/api/prerequisite?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/prerequisite/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/prerequisite/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "planSubjectId": 6,
+      "prerequisiteId": 2
+    }
+  },
+  {
+    "url": "/api/schedule?async=true",
+    "method": "POST",
+    "body": {
+      "beginTime": "13:00",
+      "endTime": "14:00"
+    }
+  },
+  {
+    "url": "/api/schedule?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/schedule/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/schedule/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "beginTime": "13:00",
+      "endTime": "14:00"
+    }
+  },
+  {
+    "url": "/api/building?async=true",
+    "method": "POST",
+    "body": {
+      "number": 225,
+      "description": "FACULTAD DE TECNOLOGÍA Y CIENCIAS EXACTAS"
+    }
+  },
+  {
+    "url": "/api/building?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/building/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/building/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "number": 225,
+      "description": "FACULTAD DE TECNOLOGÍA Y CIENCIAS EXACTAS"
+    }
+  },
+  {
+    "url": "/api/classroom?async=true",
+    "method": "POST",
+    "body": {
+      "number": 11,
+      "buildingId": 1,
+      "capacity": 35,
+      "floor": 1
+    }
+  },
+  {
+    "url": "/api/classroom?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/classroom/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/classroom/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "number": 11,
+      "buildingId": 1,
+      "capacity": 35,
+      "floor": 1
+    }
+  },
+  
+  {
+    "url": "/api/registration?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/registration/1?async=true",
+    "method": "GET"
+  },
+
+  {
+    "url": "/api/term?async=true",
+    "method": "POST",
+    "body": {
+      "number": 2027
+    }
+  },
+  {
+    "url": "/api/term?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/term/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/term/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "number": 2027
+    }
+  },
+  {
+    "url": "/api/period?async=true",
+    "method": "POST",
+    "body": {
+      "termId": 1,
+      "number": 1
+    }
+  },
+  {
+    "url": "/api/period?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/period/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/period/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "termId": 1,
+      "number": 1
+    }
+  },
+  {
+    "url": "/api/subject-group?async=true",
+    "method": "POST",
+    "body": {
+      "group": "SA",
+      "teacherId": 1,
+      "planSubjectId": 1
+    }
+  },
+  {
+    "url": "/api/subject-group?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/subject-group/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/subject-group/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "group": "SA",
+      "teacherId": 1,
+      "planSubjectId": 1
+    }
+  },
+  {
+    "url": "/api/group-schedule?async=true",
+    "method": "POST",
+    "body": {
+      "scheduleId": 1,
+      "classroomId": 1,
+      "dayId": 1,
+      "subjectGroupId": 1
+    }
+  },
+  {
+    "url": "/api/group-schedule?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/group-schedule/1?async=true",
+    "method": "GET"
+  },
+  {
+    "url": "/api/group-schedule/1?async=true",
+    "method": "PATCH",
+    "body": {
+      "scheduleId": 1,
+      "classroomId": 1,
+      "dayId": 1,
+      "subjectGroupId": 1
     }
   }
 ]
