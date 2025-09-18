@@ -21,7 +21,7 @@ public class Worker
         _id = id;
         _minDelayMs = Math.Max(0, minDelayMs);
         _maxDelayMs = Math.Max(_minDelayMs + 1, maxDelayMs);
-        _random = new Random(unchecked(id * 397) ^ Environment.TickCount); // menos colisiones entre workers
+        _random = new Random(unchecked(id * 397) ^ Environment.TickCount);
         _manager = manager;
     }
 
@@ -55,52 +55,71 @@ public class Worker
                 operation = _manager.GetNextOperation(_random);
                 if (operation == null)
                 {
-                    // No hay operaciones disponibles, esperar un poco más
                     Console.WriteLine($"[Worker {_id}] Sin operaciones disponibles, esperando...");
-                    await Task.Delay(5000); // Esperar 5 segundos antes de intentar de nuevo
+                    await Task.Delay(5000);
                     continue;
                 }
 
+                // CONTAR LA PETICIÓN INMEDIATAMENTE AL ENVIARLA
+                _manager.RecordRequestSent(operation.Method ?? "GET", operation.Url);
 
                 var startTime = DateTime.Now;
-                var response = await MakeRequest(client, operation);
-                var duration = DateTime.Now - startTime;
-
-                // Determinar si fue exitoso (códigos 2xx)
-                bool isSuccess = IsSuccessStatusCode(response.StatusCode);
-                string statusEmoji = isSuccess ? "✅" : "❌";
-
-                Console.WriteLine($"[Worker {_id}] {operation.Method} {operation.Url} -> {(int)response.StatusCode} {response.ReasonPhrase} {statusEmoji} ({duration.TotalMilliseconds:F0}ms)");
+                HttpResponseMessage? response = null;
+                bool requestCompleted = false;
                 
-                // Reportar la ejecución del endpoint al manager (con indicador de éxito/error)
-                _manager.RecordEndpointExecution(operation.Method ?? "GET", operation.Url, isSuccess);
+                try
+                {
+                    response = await MakeRequest(client, operation);
+                    requestCompleted = true;
+                    var duration = DateTime.Now - startTime;
 
-                // descanso aleatorio
+                    // Determinar si fue exitoso
+                    bool isSuccess = IsSuccessStatusCode(response.StatusCode);
+                    string statusEmoji = isSuccess ? "✅" : "❌";
+
+                    Console.WriteLine($"[Worker {_id}] {operation.Method} {operation.Url} -> {(int)response.StatusCode} {response.ReasonPhrase} {statusEmoji} ({duration.TotalMilliseconds:F0}ms)");
+                    
+                    // Registrar el resultado de la respuesta
+                    if (isSuccess)
+                    {
+                        _manager.RecordRequestSuccess(operation.Method ?? "GET", operation.Url);
+                    }
+                    else
+                    {
+                        _manager.RecordRequestError(operation.Method ?? "GET", operation.Url);
+                    }
+                }
+                catch (TaskCanceledException) when (!_isRunning)
+                {
+                    // Worker detenido, salir sin registrar timeout
+                    break;
+                }
+                catch (TaskCanceledException)
+                {
+                    // Timeout - la petición ya fue contada como enviada
+                    Console.WriteLine($"[Worker {_id}] Timeout: La petición tardó más de 10 segundos");
+                    _manager.RecordRequestTimeout(operation.Method ?? "GET", operation.Url);
+                }
+                catch (HttpRequestException ex)
+                {
+                    // Error de red - la petición ya fue contada como enviada
+                    Console.WriteLine($"[Worker {_id}] HTTP Error: {ex.Message}");
+                    _manager.RecordRequestError(operation.Method ?? "GET", operation.Url);
+                }
+                finally
+                {
+                    response?.Dispose();
+                }
+
+                // Descanso aleatorio
                 var delay = _random.Next(_minDelayMs, _maxDelayMs);
                 await Task.Delay(delay);
-            }
-            catch (HttpRequestException ex)
-            {
-                Console.WriteLine($"[Worker {_id}] HTTP Error: {ex.Message}");
-                await Task.Delay(2000);
-            }
-            catch (TaskCanceledException ex) when (!_isRunning)
-            {
-                // Worker detenido, salir
-                break;
-            }
-            catch (TaskCanceledException)
-            {
-                Console.WriteLine($"[Worker {_id}] Timeout: La petición tardó más de 10 segundos");
-                if (operation != null)
-                {
-                    _manager.RecordEndpointTimeout(operation.Method ?? "GET", operation.Url);
-                }
-                await Task.Delay(1000);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[Worker {_id}] Error inesperado: {ex.Message}");
+                // Si hubo una operación pero falló antes del envío, no contamos nada
+                // porque RecordRequestSent solo se llama justo antes de MakeRequest
                 await Task.Delay(1000);
             }
         }
@@ -116,6 +135,7 @@ public class Worker
         var method = operation.Method?.ToUpperInvariant() ?? "GET";
         var ip = Environment.GetEnvironmentVariable("IP") ?? throw new InvalidOperationException("Variable IP no encontrada en .env");
         var finalUrl = $"{ip}{operation.Url}";
+        
         var request = new HttpRequestMessage
         {
             RequestUri = new Uri(finalUrl),
@@ -129,39 +149,39 @@ public class Worker
                 _        => HttpMethod.Get
             }
         };
-        //Headers personalizados por operación
+
+        // Headers personalizados por operación
         if (operation.Headers is not null)
         {
             foreach (var kv in operation.Headers)
             {
-                // Evitar colisión con Authorization que seteamos abajo
                 if (!kv.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
                     request.Headers.TryAddWithoutValidation(kv.Key, kv.Value);
             }
         }
+
         if (operation.Body is not null && (method is "POST" or "PUT" or "PATCH" or "DELETE"))
         {
             request.Content = ToJsonContent(operation.Body);
         }
+
         if (!string.IsNullOrWhiteSpace(operation.Token))
         {
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", operation.Token);
         }
+
         request.Headers.TryAddWithoutValidation("Accept", "application/json");
         return await client.SendAsync(request);
     }
 
     private static StringContent ToJsonContent(object body)
     {
-        // Si viene como string, asumimos que ya es JSON (o texto) y lo enviamos tal cual.
         if (body is string s)
             return new StringContent(s, Encoding.UTF8, "application/json");
 
-        // Si viene como JsonElement (típico al deserializar desde Interfaz.json), escribirlo “crudo”.
         if (body is JsonElement el)
             return new StringContent(el.GetRawText(), Encoding.UTF8, "application/json");
 
-        // Si viene como objeto arbitrario (anónimo, diccionario, POCO), serializar.
         var json = JsonSerializer.Serialize(body, new JsonSerializerOptions
         {
             DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
@@ -169,5 +189,4 @@ public class Worker
         });
         return new StringContent(json, Encoding.UTF8, "application/json");
     }
-
 }

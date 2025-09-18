@@ -8,12 +8,16 @@ public class WorkerManager
 {
     private readonly List<Worker> _workers = new();
     private readonly List<OperationRequest> _operations;
-    private readonly Dictionary<string, int> _endpointCounts = new();
-    private readonly Dictionary<string, int> _endpointErrors = new();
-    private readonly Dictionary<string, int> _endpointTimeouts = new();
+    
+    // 🔥 NUEVAS ESTADÍSTICAS MÁS PRECISAS
+    private readonly Dictionary<string, int> _requestsSent = new();      // Peticiones enviadas
+    private readonly Dictionary<string, int> _requestsSuccess = new();   // Respuestas exitosas
+    private readonly Dictionary<string, int> _requestsError = new();     // Respuestas con error
+    private readonly Dictionary<string, int> _requestsTimeout = new();   // Timeouts
+    
     private readonly int _minDelayMs;
     private readonly int _maxDelayMs;
-    private readonly object _countLock = new();
+    private readonly object _statsLock = new();
     private readonly object _operationsLock = new();
     private readonly int _initialCount;
 
@@ -21,7 +25,6 @@ public class WorkerManager
     {
         _minDelayMs = minDelayMs;
         _maxDelayMs = maxDelayMs;
-
         _operations = new List<OperationRequest>(operations);
         _initialCount = operations.Length;
     }
@@ -32,21 +35,18 @@ public class WorkerManager
         {
             if (_operations.Count == 0) return null;
 
-            // Sacar operación random
             var index = random.Next(_operations.Count);
             var originalOperation = _operations[index];
 
-            // Crear una COPIA de la operación para no modificar la original
             var operationCopy = new OperationRequest
             {
                 Url = originalOperation.Url,
                 Method = originalOperation.Method,
-                Headers = originalOperation.Headers, // Las headers normalmente no cambian
+                Headers = originalOperation.Headers,
                 Token = originalOperation.Token,
-                Body = originalOperation.Body // Inicialmente la misma referencia
+                Body = originalOperation.Body
             };
 
-            // 👇 AHORA: procesar body para POST **o** PUT
             var method = operationCopy.Method?.ToUpperInvariant() ?? "GET";
             if ((method == "POST" || method == "PUT") && operationCopy.Body != null)
             {
@@ -57,129 +57,58 @@ public class WorkerManager
         }
     }
 
-    private object ProcessPostBodyCopy(object body, string url)
+    // 🔥 MÉTODOS ESPECÍFICOS PARA DIFERENTES TIPOS DE REGISTROS
+    public void RecordRequestSent(string method, string url)
     {
-        try
+        var endpoint = $"{method.ToUpperInvariant()} {url}";
+        lock (_statsLock)
         {
-            Dictionary<string, object>? dict;
-
-            // Normalizar todo a Dictionary<string, object>
-            if (body is string jsonString)
-            {
-                dict = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonString);
-            }
-            else if (body is JsonElement element)
-            {
-                dict = JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText());
-            }
-            else if (body is Dictionary<string, object> existingDict)
-            {
-                // CREAR UNA COPIA PROFUNDA del diccionario existente
-                var serialized = JsonSerializer.Serialize(existingDict);
-                dict = JsonSerializer.Deserialize<Dictionary<string, object>>(serialized);
-            }
-            else
-            {
-                return body; // tipo no esperado → devolver tal cual
-            }
-
-            if (dict == null) return body;
-
-            // Procesar valores recursivamente en la copia
-            ProcessDictionaryFields(dict, url);
-
-            return dict;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error procesando body POST: {ex.Message}");
-            return body;
+            _requestsSent[endpoint] = _requestsSent.GetValueOrDefault(endpoint, 0) + 1;
         }
     }
 
-    private void ProcessDictionaryFields(Dictionary<string, object> dict, string url)
+    public void RecordRequestSuccess(string method, string url)
     {
-        foreach (var key in dict.Keys.ToList())
+        var endpoint = $"{method.ToUpperInvariant()} {url}";
+        lock (_statsLock)
         {
-            if (dict[key] is JsonElement element)
-            {
-                dict[key] = ConvertJsonElement(element, url);
-            }
-            else if (dict[key] is Dictionary<string, object> nestedDict)
-            {
-                ProcessDictionaryFields(nestedDict, url);
-            }
-            else if (dict[key] is string str)
-            {
-                // Procesar strings especiales
-                if (str.Equals("string", StringComparison.OrdinalIgnoreCase))
-                {
-                    dict[key] = $"{url}+{RandomStringGenerator.GenerateAlphanumeric(8)}";
-                }
-                else if (str.Equals("numero", StringComparison.OrdinalIgnoreCase))
-                {
-                    dict[key] = int.Parse(RandomStringGenerator.GenerateNumbers(8));
-                }
-            }
-            
+            _requestsSuccess[endpoint] = _requestsSuccess.GetValueOrDefault(endpoint, 0) + 1;
         }
     }
 
-    private object ConvertJsonElement(JsonElement element, string url)
+    public void RecordRequestError(string method, string url)
     {
-        return element.ValueKind switch
+        var endpoint = $"{method.ToUpperInvariant()} {url}";
+        lock (_statsLock)
         {
-            JsonValueKind.String when element.GetString()?.Equals("string", StringComparison.OrdinalIgnoreCase) == true
-                => $"{url}+{RandomStringGenerator.GenerateAlphanumeric(8)}",
-            JsonValueKind.String when element.GetString()?.Equals("numero", StringComparison.OrdinalIgnoreCase) == true
-                => int.Parse(RandomStringGenerator.GenerateNumbers(8)),
-
-            JsonValueKind.Object =>
-                JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText()) is { } nestedDict
-                    ? ReturnProcessedDict(nestedDict, url)
-                    : element.GetRawText(),
-
-            JsonValueKind.Array
-                => element.EnumerateArray()
-                        .Select(e => ConvertJsonElement(e, url))
-                        .ToList(),
-
-            JsonValueKind.String => element.GetString()!,
-            JsonValueKind.Number => element.GetDouble(),
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Null => null!,
-            _ => element.ToString()
-        };
+            _requestsError[endpoint] = _requestsError.GetValueOrDefault(endpoint, 0) + 1;
+        }
     }
 
-    private object ReturnProcessedDict(Dictionary<string, object> dict, string url)
+    public void RecordRequestTimeout(string method, string url)
     {
-        ProcessDictionaryFields(dict, url);
-        return dict;
+        var endpoint = $"{method.ToUpperInvariant()} {url}";
+        lock (_statsLock)
+        {
+            _requestsTimeout[endpoint] = _requestsTimeout.GetValueOrDefault(endpoint, 0) + 1;
+        }
     }
 
+    // 🔥 MANTENER COMPATIBILIDAD CON CÓDIGO EXISTENTE
+    [Obsolete("Usar RecordRequestSent, RecordRequestSuccess, RecordRequestError en su lugar")]
     public void RecordEndpointExecution(string method, string url, bool isSuccess = true)
     {
-        var endpoint = $"{method.ToUpperInvariant()} {url}";
-        lock (_countLock)
-        {
-            _endpointCounts[endpoint] = _endpointCounts.GetValueOrDefault(endpoint, 0) + 1;
-
-            if (!isSuccess)
-            {
-                _endpointErrors[endpoint] = _endpointErrors.GetValueOrDefault(endpoint, 0) + 1;
-            }
-        }
+        RecordRequestSent(method, url);
+        if (isSuccess)
+            RecordRequestSuccess(method, url);
+        else
+            RecordRequestError(method, url);
     }
 
+    [Obsolete("Usar RecordRequestTimeout en su lugar")]
     public void RecordEndpointTimeout(string method, string url)
     {
-        var endpoint = $"{method.ToUpperInvariant()} {url}";
-        lock (_countLock)
-        {
-            _endpointTimeouts[endpoint] = _endpointTimeouts.GetValueOrDefault(endpoint, 0) + 1;
-        }
+        RecordRequestTimeout(method, url);
     }
 
     public void AddWorkers(int count)
@@ -245,9 +174,9 @@ public class WorkerManager
 
     public void ShowStats()
     {
-        lock (_countLock)
+        lock (_statsLock)
         {
-            if (_endpointCounts.Count == 0)
+            if (_requestsSent.Count == 0)
             {
                 Console.WriteLine(" No hay estadísticas disponibles aún");
                 return;
@@ -255,55 +184,70 @@ public class WorkerManager
 
             Console.WriteLine("\n📊 Estadísticas de Endpoints:");
 
+            // Obtener todos los endpoints únicos
+            var allEndpoints = _requestsSent.Keys
+                .Union(_requestsSuccess.Keys)
+                .Union(_requestsError.Keys)
+                .Union(_requestsTimeout.Keys)
+                .ToHashSet();
+
             // Agrupar por método HTTP
-            var groupedByMethod = _endpointCounts
-                .GroupBy(kvp => kvp.Key.Split(' ')[0]) // Extraer el método (GET, POST, etc.)
-                .OrderBy(g => GetMethodOrder(g.Key))   // Ordenar por prioridad de método
+            var groupedByMethod = allEndpoints
+                .GroupBy(endpoint => endpoint.Split(' ')[0])
+                .OrderBy(g => GetMethodOrder(g.Key))
                 .ToList();
 
             foreach (var methodGroup in groupedByMethod)
             {
                 var method = methodGroup.Key;
-                var totalForMethod = methodGroup.Sum(kvp => kvp.Value);
-                var errorsForMethod = methodGroup.Sum(kvp => _endpointErrors.GetValueOrDefault(kvp.Key, 0));
-                var timeoutsForMethod = methodGroup.Sum(kvp => _endpointTimeouts.GetValueOrDefault(kvp.Key, 0));
-                var successRate = totalForMethod > 0 ? ((totalForMethod - errorsForMethod - timeoutsForMethod) * 100.0 / totalForMethod) : 100;
+                var sentForMethod = methodGroup.Sum(endpoint => _requestsSent.GetValueOrDefault(endpoint, 0));
+                var successForMethod = methodGroup.Sum(endpoint => _requestsSuccess.GetValueOrDefault(endpoint, 0));
+                var errorForMethod = methodGroup.Sum(endpoint => _requestsError.GetValueOrDefault(endpoint, 0));
+                var timeoutForMethod = methodGroup.Sum(endpoint => _requestsTimeout.GetValueOrDefault(endpoint, 0));
+                var pendingForMethod = sentForMethod - successForMethod - errorForMethod - timeoutForMethod;
 
-                Console.WriteLine($"\n🔹 {method} ({totalForMethod} requests, {errorsForMethod} errores, {timeoutsForMethod} timeouts, {successRate:F1}% éxito):");
+                var successRate = sentForMethod > 0 ? (successForMethod * 100.0 / sentForMethod) : 0;
 
-                // Ordenar endpoints dentro del método por número de peticiones (descendente)
-                var sortedEndpoints = methodGroup.OrderByDescending(kvp => kvp.Value);
+                Console.WriteLine($"\n🔹 {method} ({sentForMethod} enviadas, {successForMethod} éxito, {errorForMethod} error, {timeoutForMethod} timeout, {pendingForMethod} pendientes, {successRate:F1}% éxito):");
 
-                foreach (var kvp in sortedEndpoints)
+                // Ordenar endpoints por número de peticiones enviadas
+                var sortedEndpoints = methodGroup
+                    .OrderByDescending(endpoint => _requestsSent.GetValueOrDefault(endpoint, 0));
+
+                foreach (var endpoint in sortedEndpoints)
                 {
-                    var url = kvp.Key.Substring(method.Length + 1); // Quitar "GET " del inicio
-                    var errors = _endpointErrors.GetValueOrDefault(kvp.Key, 0);
-                    var timeouts = _endpointTimeouts.GetValueOrDefault(kvp.Key, 0);
-                    var success = kvp.Value - errors - timeouts;
-                    var endpointSuccessRate = kvp.Value > 0 ? (success * 100.0 / kvp.Value) : 100;
+                    var url = endpoint.Substring(method.Length + 1);
+                    var sent = _requestsSent.GetValueOrDefault(endpoint, 0);
+                    var success = _requestsSuccess.GetValueOrDefault(endpoint, 0);
+                    var errors = _requestsError.GetValueOrDefault(endpoint, 0);
+                    var timeouts = _requestsTimeout.GetValueOrDefault(endpoint, 0);
+                    var pending = sent - success - errors - timeouts;
 
-                    if (errors > 0 || timeouts > 0)
+                    if (sent > 0)
                     {
-                        var statusText = "";
-                        if (success > 0) statusText += $"{success} ✅";
-                        if (errors > 0) statusText += $", {errors} ❌";
-                        if (timeouts > 0) statusText += $", {timeouts} ⏰";
+                        var endpointSuccessRate = success * 100.0 / sent;
+                        var statusParts = new List<string>();
+                        
+                        if (success > 0) statusParts.Add($"{success} ✅");
+                        if (errors > 0) statusParts.Add($"{errors} ❌");
+                        if (timeouts > 0) statusParts.Add($"{timeouts} ⏰");
+                        if (pending > 0) statusParts.Add($"{pending} ⏳");
 
-                        Console.WriteLine($"   {url} - {kvp.Value} total ({statusText.TrimStart(',', ' ')}, {endpointSuccessRate:F1}%)");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"   {url} - {kvp.Value} requests (100% ✅)");
+                        var statusText = string.Join(", ", statusParts);
+                        Console.WriteLine($"   {url} - {sent} enviadas ({statusText}, {endpointSuccessRate:F1}%)");
                     }
                 }
             }
 
-            var totalRequests = _endpointCounts.Values.Sum();
-            var totalErrors = _endpointErrors.Values.Sum();
-            var totalTimeouts = _endpointTimeouts.Values.Sum();
-            var totalSuccessRate = totalRequests > 0 ? ((totalRequests - totalErrors - totalTimeouts) * 100.0 / totalRequests) : 100;
+            // Totales generales
+            var totalSent = _requestsSent.Values.Sum();
+            var totalSuccess = _requestsSuccess.Values.Sum();
+            var totalErrors = _requestsError.Values.Sum();
+            var totalTimeouts = _requestsTimeout.Values.Sum();
+            var totalPending = totalSent - totalSuccess - totalErrors - totalTimeouts;
+            var totalSuccessRate = totalSent > 0 ? (totalSuccess * 100.0 / totalSent) : 0;
 
-            Console.WriteLine($"\n📈 Total general: {totalRequests} requests ({totalRequests - totalErrors - totalTimeouts} ✅, {totalErrors} ❌, {totalTimeouts} ⏰, {totalSuccessRate:F1}% éxito)");
+            Console.WriteLine($"\n📈 Total general: {totalSent} enviadas ({totalSuccess} ✅, {totalErrors} ❌, {totalTimeouts} ⏰, {totalPending} ⏳, {totalSuccessRate:F1}% éxito)");
             Console.WriteLine();
         }
     }
@@ -319,5 +263,98 @@ public class WorkerManager
             "DELETE" => 5,
             _ => 6
         };
+    }
+
+    // Métodos privados existentes (sin cambios)
+    private object ProcessPostBodyCopy(object body, string url)
+    {
+        try
+        {
+            Dictionary<string, object>? dict;
+
+            if (body is string jsonString)
+            {
+                dict = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonString);
+            }
+            else if (body is JsonElement element)
+            {
+                dict = JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText());
+            }
+            else if (body is Dictionary<string, object> existingDict)
+            {
+                var serialized = JsonSerializer.Serialize(existingDict);
+                dict = JsonSerializer.Deserialize<Dictionary<string, object>>(serialized);
+            }
+            else
+            {
+                return body;
+            }
+
+            if (dict == null) return body;
+            ProcessDictionaryFields(dict, url);
+            return dict;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error procesando body POST: {ex.Message}");
+            return body;
+        }
+    }
+
+    private void ProcessDictionaryFields(Dictionary<string, object> dict, string url)
+    {
+        foreach (var key in dict.Keys.ToList())
+        {
+            if (dict[key] is JsonElement element)
+            {
+                dict[key] = ConvertJsonElement(element, url);
+            }
+            else if (dict[key] is Dictionary<string, object> nestedDict)
+            {
+                ProcessDictionaryFields(nestedDict, url);
+            }
+            else if (dict[key] is string str)
+            {
+                if (str.Equals("string", StringComparison.OrdinalIgnoreCase))
+                {
+                    dict[key] = $"{url}+{RandomStringGenerator.GenerateAlphanumeric(8)}";
+                }
+                else if (str.Equals("numero", StringComparison.OrdinalIgnoreCase))
+                {
+                    dict[key] = int.Parse(RandomStringGenerator.GenerateNumbers(8));
+                }
+            }
+        }
+    }
+
+    private object ConvertJsonElement(JsonElement element, string url)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.String when element.GetString()?.Equals("string", StringComparison.OrdinalIgnoreCase) == true
+                => $"{url}+{RandomStringGenerator.GenerateAlphanumeric(8)}",
+            JsonValueKind.String when element.GetString()?.Equals("numero", StringComparison.OrdinalIgnoreCase) == true
+                => int.Parse(RandomStringGenerator.GenerateNumbers(8)),
+            JsonValueKind.Object =>
+                JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText()) is { } nestedDict
+                    ? ReturnProcessedDict(nestedDict, url)
+                    : element.GetRawText(),
+            JsonValueKind.Array
+                => element.EnumerateArray()
+                        .Select(e => ConvertJsonElement(e, url))
+                        .ToList(),
+            JsonValueKind.String => element.GetString()!,
+            JsonValueKind.Number => element.GetDouble(),
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Null => null!,
+            _ => element.ToString()
+        };
+    }
+
+    private object ReturnProcessedDict(Dictionary<string, object> dict, string url)
+    {
+        ProcessDictionaryFields(dict, url);
+        return dict;
     }
 }
