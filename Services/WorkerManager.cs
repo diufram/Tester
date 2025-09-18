@@ -109,10 +109,19 @@ public class WorkerManager
             {
                 ProcessDictionaryFields(nestedDict, url);
             }
-            else if (dict[key] is string str && str.Equals("string", StringComparison.OrdinalIgnoreCase))
+            else if (dict[key] is string str)
             {
-                dict[key] = $"{url}+{RandomStringGenerator.GenerateAlphanumeric(8)}";
+                // Procesar strings especiales
+                if (str.Equals("string", StringComparison.OrdinalIgnoreCase))
+                {
+                    dict[key] = $"{url}+{RandomStringGenerator.GenerateAlphanumeric(8)}";
+                }
+                else if (str.Equals("numero", StringComparison.OrdinalIgnoreCase))
+                {
+                    dict[key] = int.Parse(RandomStringGenerator.GenerateNumbers(8));
+                }
             }
+            
         }
     }
 
@@ -122,6 +131,8 @@ public class WorkerManager
         {
             JsonValueKind.String when element.GetString()?.Equals("string", StringComparison.OrdinalIgnoreCase) == true
                 => $"{url}+{RandomStringGenerator.GenerateAlphanumeric(8)}",
+            JsonValueKind.String when element.GetString()?.Equals("numero", StringComparison.OrdinalIgnoreCase) == true
+                => int.Parse(RandomStringGenerator.GenerateNumbers(8)),
 
             JsonValueKind.Object =>
                 JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText()) is { } nestedDict
