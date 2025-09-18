@@ -1,384 +1,482 @@
 [
   {
-    "url": "/api/teacher?async=true",
+    "url": "/api/carreras",
+    "method": "GET"
+  },
+  {
+    "url": "/api/carreras",
     "method": "POST",
     "body": {
-      "code": 123456,
-      "ci": 13173632,
-      "name": "APELLIDOS NOMBRES DOCENTE 001",
-      "email": "docente001@gmail.com",
-      "cellphone": 67788553
+      "nombre": "Ingeniería de Industrial",
+      "codigo": "ING-IND-001"
     }
   },
   {
-    "url": "/api/teacher?async=true",
+    "url": "/api/carreras/1",
     "method": "GET"
   },
   {
-    "url": "/api/teacher/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/teacher/1?async=true",
+    "url": "/api/carreras/1",
     "method": "PATCH",
     "body": {
-      "code": 123456,
-      "ci": 13173632,
-      "name": "APELLIDOS NOMBRES DOCENTE 001",
-      "email": "docente001@gmail.com",
-      "cellphone": 67788553
+      "nombre": "Ingeniería en Sistemas Computacionales",
+      "codigo": "ING-SIS-002"
     }
   },
   {
-    "url": "/api/student?async=true",
+    "url": "/api/aulas",
+    "method": "GET"
+  },
+  {
+    "url": "/api/aulas",
     "method": "POST",
     "body": {
-      "code": 220014551,
-      "ci": 14183129,
-      "name": "APELLIDOS NOMBRES ESTUDIANTE 001",
-      "email": "estudiante001@gmail.com",
-      "cellphone": 73832536
+      "numero": 101,
+      "idModulo": 1
     }
   },
   {
-    "url": "/api/student?async=true",
+    "url": "/api/aulas/1",
     "method": "GET"
   },
   {
-    "url": "/api/student/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/student/1?async=true",
+    "url": "/api/aulas/1",
     "method": "PATCH",
     "body": {
-      "code": 220014551,
-      "ci": 14183129,
-      "name": "APELLIDOS NOMBRES ESTUDIANTE 001",
-      "email": "estudiante001@gmail.com",
-      "cellphone": 73832536
+      "numero": 102,
+      "idModulo": 2
     }
   },
   {
-    "url": "/api/grade?async=true",
+    "url": "/api/boleta-horarios",
+    "method": "GET"
+  },
+  {
+    "url": "/api/boleta-horarios",
     "method": "POST",
     "body": {
-      "number": 100,
-      "studentId": 1,
-      "registrationDetailId": 1
+      "idHorario": 1,
+      "idGrupoMateria": 1
     }
   },
   {
-    "url": "/api/grade?async=true",
+    "url": "/api/boleta-horarios/1",
     "method": "GET"
   },
   {
-    "url": "/api/grade/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/grade/1?async=true",
+    "url": "/api/boleta-horarios/1",
     "method": "PATCH",
     "body": {
-      "number": 100,
-      "studentId": 1,
-      "registrationDetailId": 1
+      "idHorario": 2,
+      "idGrupoMateria": 1
     }
   },
   {
-    "url": "/api/study-plan?async=true",
+    "url": "/api/detalles",
+    "method": "GET"
+  },
+  {
+    "url": "/api/detalles",
     "method": "POST",
     "body": {
-      "code": "187-4",
-      "careerId": 1
+      "idInscripcion": 1,
+      "idGrupoMat": 1
     }
   },
   {
-    "url": "/api/study-plan?async=true",
+    "url": "/api/detalles/1",
     "method": "GET"
   },
   {
-    "url": "/api/study-plan/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/study-plan/1?async=true",
+    "url": "/api/detalles/1",
     "method": "PATCH",
     "body": {
-      "code": "187-4",
-      "careerId": 1
+      "idInscripcion": 1,
+      "idGrupoMat": 2
     }
   },
   {
-    "url": "/api/career?async=true",
+    "url": "/api/dia-horarios",
+    "method": "GET"
+  },
+  {
+    "url": "/api/dia-horarios",
     "method": "POST",
     "body": {
-      "code": "187-4",
-      "name": "ING. EN SISTEMAS"
+      "idDia": 1,
+      "idHorario": 1
     }
   },
   {
-    "url": "/api/career?async=true",
+    "url": "/api/dia-horarios/1",
     "method": "GET"
   },
   {
-    "url": "/api/career/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/career/1?async=true",
+    "url": "/api/dia-horarios/1",
     "method": "PATCH",
     "body": {
-      "code": "187-4",
-      "name": "ING. EN SISTEMAS"
+      "idDia": 2,
+      "idHorario": 1
     }
   },
   {
-    "url": "/api/subject?async=true",
+    "url": "/api/dias",
+    "method": "GET"
+  },
+  {
+    "url": "/api/dias",
     "method": "POST",
     "body": {
-      "code": "INF777",
-      "name": "MICROSERVICIOS"
+      "nombre": "Lunes"
     }
   },
   {
-    "url": "/api/subject?async=true",
+    "url": "/api/dias/1",
     "method": "GET"
   },
   {
-    "url": "/api/subject/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/subject/1?async=true",
+    "url": "/api/dias/1",
     "method": "PATCH",
     "body": {
-      "code": "INF777",
-      "name": "MICROSERVICIOS"
+      "nombre": "Martes"
     }
   },
-  
   {
-    "url": "/api/plan-subject?async=true",
+    "url": "/api/docentes",
     "method": "GET"
   },
   {
-    "url": "/api/plan-subject/1?async=true",
-    "method": "GET"
-  },
-  
-  {
-    "url": "/api/prerequisite?async=true",
+    "url": "/api/docentes",
     "method": "POST",
     "body": {
-      "planSubjectId": 6,
-      "prerequisiteId": 2
+      "ci": 12345678,
+      "nombre": "Juan Perez",
+      "direccion": "Av. Siempre Viva 123",
+      "registro": 98765,
+      "especialidad": "Matemáticas",
+      "telefono": 76543210
     }
   },
   {
-    "url": "/api/prerequisite?async=true",
+    "url": "/api/docentes/1",
     "method": "GET"
   },
   {
-    "url": "/api/prerequisite/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/prerequisite/1?async=true",
+    "url": "/api/docentes/1",
     "method": "PATCH",
     "body": {
-      "planSubjectId": 6,
-      "prerequisiteId": 2
+      "direccion": "Calle Nueva 456",
+      "telefono": 71234567
     }
   },
   {
-    "url": "/api/schedule?async=true",
+    "url": "/api/estudiantes",
+    "method": "GET"
+  },
+  {
+    "url": "/api/estudiantes",
     "method": "POST",
     "body": {
-      "beginTime": "13:00",
-      "endTime": "14:00"
+      "nombre": "Maria Lopez",
+      "ci": 45678901,
+      "registro": 20230001,
+      "telefono": 70123456,
+      "direccion": "Zona Central",
+      "tituloBachiller": 12345,
+      "idPlan": 1
     }
   },
   {
-    "url": "/api/schedule?async=true",
+    "url": "/api/estudiantes/1",
     "method": "GET"
   },
   {
-    "url": "/api/schedule/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/schedule/1?async=true",
+    "url": "/api/estudiantes/1",
     "method": "PATCH",
     "body": {
-      "beginTime": "13:00",
-      "endTime": "14:00"
+      "telefono": 70987654,
+      "direccion": "Zona Norte"
     }
   },
   {
-    "url": "/api/building?async=true",
+    "url": "/api/gestions",
+    "method": "GET"
+  },
+  {
+    "url": "/api/gestions",
     "method": "POST",
     "body": {
-      "number": 225,
-      "description": "FACULTAD DE TECNOLOGÍA Y CIENCIAS EXACTAS"
+      "numero": 2025
     }
   },
   {
-    "url": "/api/building?async=true",
+    "url": "/api/gestions/1",
     "method": "GET"
   },
   {
-    "url": "/api/building/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/building/1?async=true",
+    "url": "/api/gestions/1",
     "method": "PATCH",
     "body": {
-      "number": 225,
-      "description": "FACULTAD DE TECNOLOGÍA Y CIENCIAS EXACTAS"
+      "numero": 2026
     }
   },
   {
-    "url": "/api/classroom?async=true",
+    "url": "/api/grupo-materias",
+    "method": "GET"
+  },
+  {
+    "url": "/api/grupo-materias",
     "method": "POST",
     "body": {
-      "number": 11,
-      "buildingId": 1,
-      "capacity": 35,
-      "floor": 1
+      "cupos": 30,
+      "idMateria": 1,
+      "idDocente": 1,
+      "idGrupo": 1
     }
   },
   {
-    "url": "/api/classroom?async=true",
+    "url": "/api/grupo-materias/1",
     "method": "GET"
   },
   {
-    "url": "/api/classroom/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/classroom/1?async=true",
+    "url": "/api/grupo-materias/1",
     "method": "PATCH",
     "body": {
-      "number": 11,
-      "buildingId": 1,
-      "capacity": 35,
-      "floor": 1
+      "cupos": 35,
+      "idDocente": 2
     }
   },
-  
   {
-    "url": "/api/registration?async=true",
+    "url": "/api/grupos",
     "method": "GET"
   },
   {
-    "url": "/api/registration/1?async=true",
-    "method": "GET"
-  },
-
-  {
-    "url": "/api/term?async=true",
+    "url": "/api/grupos",
     "method": "POST",
     "body": {
-      "number": 2027
+      "sigla": "GRP"
     }
   },
   {
-    "url": "/api/term?async=true",
+    "url": "/api/grupos/1",
     "method": "GET"
   },
   {
-    "url": "/api/term/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/term/1?async=true",
+    "url": "/api/grupos/1",
     "method": "PATCH",
     "body": {
-      "number": 2027
+      "sigla": "GRQ"
     }
   },
   {
-    "url": "/api/period?async=true",
+    "url": "/api/horarios",
+    "method": "GET"
+  },
+  {
+    "url": "/api/horarios",
     "method": "POST",
     "body": {
-      "termId": 1,
-      "number": 1
+      "horaInicio": "08:00",
+      "horaFin": "09:30",
+      "idAula": 1
     }
   },
   {
-    "url": "/api/period?async=true",
+    "url": "/api/horarios/1",
     "method": "GET"
   },
   {
-    "url": "/api/period/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/period/1?async=true",
+    "url": "/api/horarios/1",
     "method": "PATCH",
     "body": {
-      "termId": 1,
-      "number": 1
+      "horaFin": "10:00"
     }
   },
   {
-    "url": "/api/subject-group?async=true",
+    "url": "/api/inscripcions",
+    "method": "GET"
+  },
+  {
+    "url": "/api/inscripcions",
     "method": "POST",
     "body": {
-      "group": "SA",
-      "teacherId": 1,
-      "planSubjectId": 1
+      "idEstudiante": 1
     }
   },
   {
-    "url": "/api/subject-group?async=true",
+    "url": "/api/inscripcions/1",
     "method": "GET"
   },
   {
-    "url": "/api/subject-group/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/subject-group/1?async=true",
+    "url": "/api/inscripcions/1",
     "method": "PATCH",
     "body": {
-      "group": "SA",
-      "teacherId": 1,
-      "planSubjectId": 1
+      "idEstudiante": 2
     }
   },
   {
-    "url": "/api/group-schedule?async=true",
+    "url": "/api/materias",
+    "method": "GET"
+  },
+  {
+    "url": "/api/materias",
     "method": "POST",
     "body": {
-      "scheduleId": 1,
-      "classroomId": 1,
-      "dayId": 1,
-      "subjectGroupId": 1
+      "nombre": "Cálculo I",
+      "codigo": "MAT-101",
+      "idNivel": 1,
+      "idPlan": 1
     }
   },
   {
-    "url": "/api/group-schedule?async=true",
+    "url": "/api/materias/1",
     "method": "GET"
   },
   {
-    "url": "/api/group-schedule/1?async=true",
-    "method": "GET"
-  },
-  {
-    "url": "/api/group-schedule/1?async=true",
+    "url": "/api/materias/1",
     "method": "PATCH",
     "body": {
-      "scheduleId": 1,
-      "classroomId": 1,
-      "dayId": 1,
-      "subjectGroupId": 1
+      "nombre": "Cálculo Diferencial",
+      "codigo": "MAT-102"
     }
   },
   {
-    "url": "/api/Materia/400",
-    "method": "DELETE"
+    "url": "/api/modulos",
+    "method": "GET"
+  },
+  {
+    "url": "/api/modulos",
+    "method": "POST",
+    "body": {
+      "codigo": 1
+    }
+  },
+  {
+    "url": "/api/modulos/1",
+    "method": "GET"
+  },
+  {
+    "url": "/api/modulos/1",
+    "method": "PATCH",
+    "body": {
+      "codigo": 2
+    }
+  },
+  {
+    "url": "/api/nivels",
+    "method": "GET"
+  },
+  {
+    "url": "/api/nivels",
+    "method": "POST",
+    "body": {
+      "nombre": "Primer Semestre",
+      "idPlan": 1
+    }
+  },
+  {
+    "url": "/api/nivels/1",
+    "method": "GET"
+  },
+  {
+    "url": "/api/nivels/1",
+    "method": "PATCH",
+    "body": {
+      "nombre": "Segundo Semestre"
+    }
+  },
+  {
+    "url": "/api/notas",
+    "method": "GET"
+  },
+  {
+    "url": "/api/notas",
+    "method": "POST",
+    "body": {
+      "nota": 95,
+      "idMatGrup": 1,
+      "idEstudiante": 1
+    }
+  },
+  {
+    "url": "/api/notas/1",
+    "method": "GET"
+  },
+  {
+    "url": "/api/notas/1",
+    "method": "PATCH",
+    "body": {
+      "nota": 97
+    }
+  },
+  {
+    "url": "/api/periodos",
+    "method": "GET"
+  },
+  {
+    "url": "/api/periodos",
+    "method": "POST",
+    "body": {
+      "numero": 1,
+      "idGrupoMateria": 1,
+      "idGestion": 1
+    }
+  },
+  {
+    "url": "/api/periodos/1",
+    "method": "GET"
+  },
+  {
+    "url": "/api/periodos/1",
+    "method": "PATCH",
+    "body": {
+      "numero": 2
+    }
+  },
+  {
+    "url": "/api/plan-estudios",
+    "method": "GET"
+  },
+  {
+    "url": "/api/plan-estudios",
+    "method": "POST",
+    "body": {
+      "nombre": "Plan 2025",
+      "idCarrera": 1
+    }
+  },
+  {
+    "url": "/api/plan-estudios/1",
+    "method": "GET"
+  },
+  {
+    "url": "/api/plan-estudios/1",
+    "method": "PATCH",
+    "body": {
+      "nombre": "Plan 2025 Actualizado"
+    }
+  },
+  {
+    "url": "/api/prerequisitos",
+    "method": "GET"
+  },
+  {
+    "url": "/api/prerequisitos",
+    "method": "POST",
+    "body": {
+      "idMateria": 2,
+      "idPrerequisito": 1
+    }
+  },
+  {
+    "url": "/api/prerequisitos/1",
+    "method": "GET"
+  },
+  {
+    "url": "/api/prerequisitos/1",
+    "method": "PATCH",
+    "body": {
+      "idPrerequisito": 3
+    }
   }
 ]
