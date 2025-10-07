@@ -21,10 +21,8 @@ var operations = OperationLoader.LoadOperationsFromJson("Interfaz.json", token)
                  ?? OperationLoader.GetDefaultOps(token);
 
 // Manager simplificado
-var manager = new WorkerManager(operations, minDelayMs, maxDelayMs);
+var manager = new WorkerManager(operations, new int[] {4,5}, minDelayMs, maxDelayMs);
 
-// Lanzamos 1 worker inicial
-manager.AddWorkers(1);
 
 Console.WriteLine("🚀 Testeador de API (.NET) – Versión Simplificada");
 Console.WriteLine("Comandos disponibles:");

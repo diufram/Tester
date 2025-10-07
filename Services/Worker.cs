@@ -46,10 +46,12 @@ public class Worker
         {
             Timeout = TimeSpan.FromSeconds(10) 
         };
-
-        while (_isRunning)
+        var cant = 0;
+        //while (_isRunning)
+        while (cant < 1)
         {
             OperationRequest? operation = null;
+            cant++;
             try
             {
                 operation = _manager.GetNextOperation(_random);

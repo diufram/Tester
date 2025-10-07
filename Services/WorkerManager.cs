@@ -9,7 +9,6 @@ public class WorkerManager
     private readonly List<Worker> _workers = new();
     private readonly List<OperationRequest> _operations;
     
-    // 🔥 NUEVAS ESTADÍSTICAS MÁS PRECISAS
     private readonly Dictionary<string, int> _requestsSent = new();      // Peticiones enviadas
     private readonly Dictionary<string, int> _requestsSuccess = new();   // Respuestas exitosas
     private readonly Dictionary<string, int> _requestsError = new();     // Respuestas con error
@@ -21,12 +20,37 @@ public class WorkerManager
     private readonly object _operationsLock = new();
     private readonly int _initialCount;
 
-    public WorkerManager(OperationRequest[] operations, int minDelayMs = 1000, int maxDelayMs = 3000)
+    //concurrencia
+    private readonly List<int> _ids = new();
+    private int _currentIdIndex = 0;
+    private readonly object _idLock = new();
+
+    public WorkerManager(OperationRequest[] operations, int[] ids, int minDelayMs = 1000, int maxDelayMs = 3000)
     {
         _minDelayMs = minDelayMs;
         _maxDelayMs = maxDelayMs;
         _operations = new List<OperationRequest>(operations);
         _initialCount = operations.Length;
+        _ids = new List<int>(ids);
+        if (_ids.Count == 0)
+        {
+            throw new ArgumentException("La lista de IDs no puede estar vacía");
+        }
+    }
+
+    public int ObtenerID()
+    {
+        lock (_idLock)
+        {
+            if (_ids.Count == 0)
+            {
+                throw new InvalidOperationException("No hay IDs disponibles");
+            }
+            
+            var id = _ids[_currentIdIndex];
+            _currentIdIndex = (_currentIdIndex + 1) % _ids.Count; // Circular
+            return id;
+        }
     }
 
     public OperationRequest? GetNextOperation(Random random)
@@ -50,14 +74,14 @@ public class WorkerManager
             var method = operationCopy.Method?.ToUpperInvariant() ?? "GET";
             if ((method == "POST" || method == "PUT") && operationCopy.Body != null)
             {
-                operationCopy.Body = ProcessPostBodyCopy(operationCopy.Body, operationCopy.Url);
+                var id = ObtenerID();
+                operationCopy.Body = ProcessPostBodyCopy(operationCopy.Body, operationCopy.Url,id);
             }
 
             return operationCopy;
         }
     }
 
-    // 🔥 MÉTODOS ESPECÍFICOS PARA DIFERENTES TIPOS DE REGISTROS
     public void RecordRequestSent(string method, string url)
     {
         var endpoint = $"{method.ToUpperInvariant()} {url}";
@@ -94,7 +118,6 @@ public class WorkerManager
         }
     }
 
-    // 🔥 MANTENER COMPATIBILIDAD CON CÓDIGO EXISTENTE
     [Obsolete("Usar RecordRequestSent, RecordRequestSuccess, RecordRequestError en su lugar")]
     public void RecordEndpointExecution(string method, string url, bool isSuccess = true)
     {
@@ -266,7 +289,7 @@ public class WorkerManager
     }
 
     // Métodos privados existentes (sin cambios)
-    private object ProcessPostBodyCopy(object body, string url)
+    private object ProcessPostBodyCopy(object body, string url, int id)
     {
         try
         {
@@ -291,7 +314,7 @@ public class WorkerManager
             }
 
             if (dict == null) return body;
-            ProcessDictionaryFields(dict, url);
+            ProcessDictionaryFields(dict, url, id);
             return dict;
         }
         catch (Exception ex)
@@ -301,21 +324,25 @@ public class WorkerManager
         }
     }
 
-    private void ProcessDictionaryFields(Dictionary<string, object> dict, string url)
+    private void ProcessDictionaryFields(Dictionary<string, object> dict, string url, int id)
     {
         foreach (var key in dict.Keys.ToList())
         {
             if (dict[key] is JsonElement element)
             {
-                dict[key] = ConvertJsonElement(element, url);
+                dict[key] = ConvertJsonElement(element, url, id);
             }
             else if (dict[key] is Dictionary<string, object> nestedDict)
             {
-                ProcessDictionaryFields(nestedDict, url);
+                ProcessDictionaryFields(nestedDict, url, id);
             }
             else if (dict[key] is string str)
             {
-                if (str.Equals("string", StringComparison.OrdinalIgnoreCase))
+                if (str.Equals("id", StringComparison.OrdinalIgnoreCase))
+                {
+                    dict[key] = id;
+                }
+                else if (str.Equals("string", StringComparison.OrdinalIgnoreCase))
                 {
                     dict[key] = $"{url}+{RandomStringGenerator.GenerateAlphanumeric(8)}";
                 }
@@ -327,21 +354,23 @@ public class WorkerManager
         }
     }
 
-    private object ConvertJsonElement(JsonElement element, string url)
+    private object ConvertJsonElement(JsonElement element, string url, int id)
     {
         return element.ValueKind switch
         {
+            JsonValueKind.String when element.GetString()?.Equals("id", StringComparison.OrdinalIgnoreCase) == true
+                => id,
             JsonValueKind.String when element.GetString()?.Equals("string", StringComparison.OrdinalIgnoreCase) == true
                 => $"{url}+{RandomStringGenerator.GenerateAlphanumeric(8)}",
             JsonValueKind.String when element.GetString()?.Equals("numero", StringComparison.OrdinalIgnoreCase) == true
                 => int.Parse(RandomStringGenerator.GenerateNumbers(8)),
             JsonValueKind.Object =>
                 JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText()) is { } nestedDict
-                    ? ReturnProcessedDict(nestedDict, url)
+                    ? ReturnProcessedDict(nestedDict, url, id)
                     : element.GetRawText(),
             JsonValueKind.Array
                 => element.EnumerateArray()
-                        .Select(e => ConvertJsonElement(e, url))
+                        .Select(e => ConvertJsonElement(e, url,id))
                         .ToList(),
             JsonValueKind.String => element.GetString()!,
             JsonValueKind.Number => element.GetDouble(),
@@ -352,9 +381,9 @@ public class WorkerManager
         };
     }
 
-    private object ReturnProcessedDict(Dictionary<string, object> dict, string url)
+    private object ReturnProcessedDict(Dictionary<string, object> dict, string url,int id)
     {
-        ProcessDictionaryFields(dict, url);
+        ProcessDictionaryFields(dict, url,id);
         return dict;
     }
 }
