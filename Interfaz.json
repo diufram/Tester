@@ -1,10 +1,6 @@
 [
   {
-    "url": "/api/inscripcions/request-seat",
-    "method": "POST",
-    "body": {
-      "idEstudiante": "id",
-      "idsGrupoMateria": [3]
-    }
+    "url": "/api/estudiantes/materias-disponibles",
+    "method": "GET"
   }
 ]

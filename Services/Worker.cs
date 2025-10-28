@@ -47,8 +47,8 @@ public class Worker
             Timeout = TimeSpan.FromSeconds(10) 
         };
         var cant = 0;
-        //while (_isRunning)
-        while (cant < 1)
+        while (_isRunning)
+        //while (cant < 1)
         {
             OperationRequest? operation = null;
             cant++;
